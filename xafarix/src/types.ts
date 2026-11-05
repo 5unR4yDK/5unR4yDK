@@ -14,9 +14,25 @@ export interface Menu {
   cocktails: Cocktail[]
 }
 
-export const newCocktail = (): Cocktail => ({
-  id: Math.random().toString(36).slice(2, 10),
+/** Landscape by default: a bar menu is usually read lying on the counter. */
+export const DEFAULT_ORIENTATION: Orientation = 'landscape'
+
+const newId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2, 10)
+
+export const newCocktail = (fields: Partial<Cocktail> = {}): Cocktail => ({
+  id: newId(),
   name: '',
   description: '',
   ingredients: '',
+  ...fields,
+})
+
+export const emptyMenu = (): Menu => ({
+  title: '',
+  subtitle: '',
+  orientation: DEFAULT_ORIENTATION,
+  cocktails: [],
 })

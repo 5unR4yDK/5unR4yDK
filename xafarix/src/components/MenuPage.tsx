@@ -60,9 +60,18 @@ interface Props {
   onFit?: (report: FitReport) => void
   /** Owned by App so the PDF exporter can measure the rendered sheet. */
   pageRef: RefObject<HTMLDivElement>
+  selectedId?: string | null
+  /** Makes the sheet itself the selector; see the comment on .cell--pick. */
+  onSelectCocktail?: (id: string) => void
 }
 
-export default function MenuPage({ menu, onFit, pageRef }: Props) {
+export default function MenuPage({
+  menu,
+  onFit,
+  pageRef,
+  selectedId = null,
+  onSelectCocktail,
+}: Props) {
   const gridRef = useRef<HTMLDivElement>(null)
 
   const box = pageBox(menu.orientation)
@@ -167,7 +176,17 @@ export default function MenuPage({ menu, onFit, pageRef }: Props) {
           </div>
         ) : (
           items.map((c) => (
-            <article className="cell" key={c.id}>
+            <article
+              className={[
+                'cell',
+                onSelectCocktail ? 'cell--pick' : '',
+                c.id === selectedId ? 'cell--selected' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              key={c.id}
+              onClick={onSelectCocktail ? () => onSelectCocktail(c.id) : undefined}
+            >
               {c.name.trim() !== '' && <h3 className="cell__name">{c.name}</h3>}
               {c.description.trim() !== '' && <p className="cell__desc">{c.description}</p>}
               {c.ingredients.trim() !== '' && <p className="cell__ing">{c.ingredients}</p>}

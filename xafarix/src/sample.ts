@@ -1,4 +1,5 @@
 import type { Menu } from './types'
+import { DEFAULT_ORIENTATION } from './types'
 
 let seq = 0
 const id = () => `s${++seq}`
@@ -11,7 +12,7 @@ const id = () => `s${++seq}`
 export const sampleMenu: Menu = {
   title: 'Xafarix',
   subtitle: 'Cocktails',
-  orientation: 'portrait',
+  orientation: DEFAULT_ORIENTATION,
   cocktails: [
     {
       id: id(),

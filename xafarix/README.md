@@ -21,6 +21,46 @@ browser's `localStorage`, and the "copy shareable link" button encodes the
 entire menu into the URL fragment, so a link carries the menu with it and no
 data is stored on a server. That is also why the app costs nothing to run.
 
+## The console
+
+One rule drove the layout: nothing in the console repeats what the sheet
+beside it already shows.
+
+- **Search** adds cocktails. Debounced at 350ms, so typing a name is one
+  request rather than nine, and in-flight requests are aborted when a newer
+  one starts — otherwise a slow answer to a short query can land after a
+  later one and overwrite the right results. Results are a dropdown that
+  closes, not a panel that stays.
+- **A detail sheet** opens on a result: image, category, glass, IBA badges,
+  the ingredient table and the method. It answers "is this the drink I meant"
+  and then closes.
+- **The roster** is every cocktail in the menu as compact chips, a few
+  wrapping rows even at forty. This replaced a vertical stack of edit forms,
+  one per cocktail, which both repeated the sheet and turned a long menu into
+  a long scroll.
+- **One inspector** edits the selected cocktail, always open and never a
+  modal: editing is exactly when the live re-fit matters, and a dialog over
+  the preview would hide it.
+- **The sheet is also the selector.** Clicking a cocktail on the page selects
+  it for editing. That is what lets the console drop its own copy of the list.
+
+Adding from the database copies name and ingredients in by value and nothing
+else; the method is one button away if wanted. The menu keeps no link back to
+the record, so every field is the bartender's from that moment and nothing
+upstream can alter a printed menu. Drinks the database has never heard of are
+added under whatever was typed.
+
+Chips are also what makes categories tractable later: they become headed
+groups, and a cocktail moves between groups by dragging a chip. A column of
+forms could never do that cleanly.
+
+## Saving
+
+Menus are saved by name on the browser, listed under "Saved menus", and
+reopened or deleted from there. Saving the same name twice replaces rather
+than quietly duplicating. Still no account and no server — the share link
+remains the way to move a menu to another device.
+
 ## How the layout works
 
 Two separate problems, solved in two places.

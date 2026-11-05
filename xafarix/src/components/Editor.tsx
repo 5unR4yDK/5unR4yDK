@@ -1,12 +1,28 @@
 import type { Cocktail, Menu, Orientation } from '../types'
-import { newCocktail } from '../types'
+import type { SavedMenu } from '../library'
+import type { Drink } from '../cocktaildb'
 import type { FitReport } from './MenuPage'
 import { MIN_BODY_PT } from './MenuPage'
 import type { PdfState } from '../App'
+import CocktailSearch from './CocktailSearch'
+import Inspector from './Inspector'
+import MenuLibrary from './MenuLibrary'
+import Roster from './Roster'
 
 interface Props {
   menu: Menu
   setMenu: (m: Menu) => void
+  selectedId: string | null
+  onSelect: (id: string) => void
+  onInspectDrink: (drink: Drink) => void
+  onAddManual: (name: string) => void
+  onPatchSelected: (patch: Partial<Cocktail>) => void
+  onMoveSelected: (delta: number) => void
+  onRemoveSelected: () => void
+  saved: SavedMenu[]
+  onSaveMenu: (name: string) => void
+  onLoadMenu: (id: string) => void
+  onDeleteMenu: (id: string) => void
   fit: FitReport | null
   onDownloadPdf: () => void
   onPrint: () => void
@@ -18,6 +34,17 @@ interface Props {
 export default function Editor({
   menu,
   setMenu,
+  selectedId,
+  onSelect,
+  onInspectDrink,
+  onAddManual,
+  onPatchSelected,
+  onMoveSelected,
+  onRemoveSelected,
+  saved,
+  onSaveMenu,
+  onLoadMenu,
+  onDeleteMenu,
   fit,
   onDownloadPdf,
   onPrint,
@@ -26,27 +53,10 @@ export default function Editor({
   pdfState,
 }: Props) {
   const patch = (p: Partial<Menu>) => setMenu({ ...menu, ...p })
-
-  const patchCocktail = (id: string, p: Partial<Cocktail>) =>
-    patch({
-      cocktails: menu.cocktails.map((c) => (c.id === id ? { ...c, ...p } : c)),
-    })
-
-  const add = () => patch({ cocktails: [...menu.cocktails, newCocktail()] })
-
-  const remove = (id: string) =>
-    patch({ cocktails: menu.cocktails.filter((c) => c.id !== id) })
-
-  const move = (index: number, delta: number) => {
-    const target = index + delta
-    if (target < 0 || target >= menu.cocktails.length) return
-    const next = [...menu.cocktails]
-    const [item] = next.splice(index, 1)
-    next.splice(target, 0, item)
-    patch({ cocktails: next })
-  }
-
   const setOrientation = (orientation: Orientation) => patch({ orientation })
+
+  const index = menu.cocktails.findIndex((c) => c.id === selectedId)
+  const selected = index >= 0 ? menu.cocktails[index] : null
 
   const tooSmall = fit !== null && menu.cocktails.length > 0 && fit.bodyPt < MIN_BODY_PT
 
@@ -56,6 +66,19 @@ export default function Editor({
         <h1>Xafarix</h1>
         <span className="overline">One-page cocktail menus</span>
       </div>
+
+      <CocktailSearch onInspect={onInspectDrink} onAddManual={onAddManual} />
+
+      <Roster cocktails={menu.cocktails} selectedId={selectedId} onSelect={onSelect} />
+
+      <Inspector
+        cocktail={selected}
+        index={index}
+        total={menu.cocktails.length}
+        onChange={onPatchSelected}
+        onMove={onMoveSelected}
+        onRemove={onRemoveSelected}
+      />
 
       <div className="row">
         <div className="field">
@@ -83,91 +106,34 @@ export default function Editor({
         <div className="seg">
           <button
             type="button"
-            aria-pressed={menu.orientation === 'portrait'}
-            onClick={() => setOrientation('portrait')}
-          >
-            Portrait
-          </button>
-          <button
-            type="button"
             aria-pressed={menu.orientation === 'landscape'}
             onClick={() => setOrientation('landscape')}
           >
             Landscape
           </button>
+          <button
+            type="button"
+            aria-pressed={menu.orientation === 'portrait'}
+            onClick={() => setOrientation('portrait')}
+          >
+            Portrait
+          </button>
         </div>
       </div>
 
-      <div className="list">
-        {menu.cocktails.map((c, i) => (
-          <div className="item" key={c.id}>
-            <div className="item__head">
-              <span className="item__num">{i + 1}</span>
-              <input
-                value={c.name}
-                placeholder="Cocktail name"
-                aria-label={`Cocktail ${i + 1} name`}
-                onChange={(e) => patchCocktail(c.id, { name: e.target.value })}
-              />
-              <div className="item__tools">
-                <button
-                  type="button"
-                  className="btn--icon"
-                  title="Move up"
-                  aria-label={`Move ${c.name || `cocktail ${i + 1}`} up`}
-                  onClick={() => move(i, -1)}
-                  disabled={i === 0}
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  className="btn--icon"
-                  title="Move down"
-                  aria-label={`Move ${c.name || `cocktail ${i + 1}`} down`}
-                  onClick={() => move(i, 1)}
-                  disabled={i === menu.cocktails.length - 1}
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  className="btn--icon"
-                  title="Remove"
-                  aria-label={`Remove ${c.name || `cocktail ${i + 1}`}`}
-                  onClick={() => remove(c.id)}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-            <textarea
-              rows={2}
-              value={c.description}
-              placeholder="Description"
-              aria-label={`Cocktail ${i + 1} description`}
-              onChange={(e) => patchCocktail(c.id, { description: e.target.value })}
-            />
-            <textarea
-              rows={2}
-              value={c.ingredients}
-              placeholder="Ingredients"
-              aria-label={`Cocktail ${i + 1} ingredients`}
-              onChange={(e) => patchCocktail(c.id, { ingredients: e.target.value })}
-            />
-          </div>
-        ))}
-      </div>
-
-      <button type="button" className="btn--add" onClick={add}>
-        + Add cocktail
-      </button>
+      <MenuLibrary
+        saved={saved}
+        currentTitle={menu.title}
+        onSave={onSaveMenu}
+        onLoad={onLoadMenu}
+        onDelete={onDeleteMenu}
+      />
 
       {tooSmall && (
         <p className="warn">
-          At {menu.cocktails.length} cocktails the body text is down to{' '}
-          {fit!.bodyPt.toFixed(1)}pt, which is too small to read on paper. Switch to
-          landscape, shorten the descriptions, or split this across two menus.
+          At {menu.cocktails.length} cocktails the smallest text is down to{' '}
+          {fit!.bodyPt.toFixed(1)}pt, too small to read on paper. Switch orientation,
+          shorten the descriptions, or split this across two menus.
         </p>
       )}
 
@@ -175,12 +141,12 @@ export default function Editor({
 
       <p className="hint">
         {fit
-          ? `${fit.cols} × ${fit.rows} · name ${(fit.namePx * 0.75).toFixed(0)}pt · body ${fit.bodyPt.toFixed(1)}pt`
+          ? `${fit.cols} × ${fit.rows} · name ${(fit.namePx * 0.75).toFixed(0)}pt · smallest ${fit.bodyPt.toFixed(1)}pt`
           : 'Measuring…'}
       </p>
 
       <p className="hint">
-        Your menu is saved in this browser and nowhere else. There is no account and no
+        Menus are saved in this browser and nowhere else. There is no account and no
         server — the shareable link carries the whole menu inside it.
       </p>
 

@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Menu } from './types'
+import type { Cocktail, Menu } from './types'
+import { newCocktail } from './types'
+import type { Drink } from './cocktaildb'
+import { poursToLine } from './cocktaildb'
 import Editor from './components/Editor'
+import DrinkModal from './components/DrinkModal'
 import MenuPage from './components/MenuPage'
 import type { FitReport } from './components/MenuPage'
 import Preview from './components/Preview'
 import { sampleMenu } from './sample'
+import { deleteSaved, listSaved, loadSaved, saveMenu } from './library'
+import type { SavedMenu } from './library'
 import { loadFromHash, loadLocal, saveLocal, shareUrl } from './storage'
 
 const PAGE_STYLE_ID = 'xafarix-page-size'
@@ -41,6 +47,11 @@ function initialMenu(): Menu {
 
 export default function App() {
   const [menu, setMenu] = useState<Menu>(initialMenu)
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => initialMenu().cocktails[0]?.id ?? null,
+  )
+  const [inspecting, setInspecting] = useState<Drink | null>(null)
+  const [saved, setSaved] = useState<SavedMenu[]>(() => listSaved())
   const [fit, setFit] = useState<FitReport | null>(null)
   const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [pdfState, setPdfState] = useState<PdfState>({ kind: 'idle' })
@@ -59,17 +70,97 @@ export default function App() {
 
   const onFit = useCallback((report: FitReport) => setFit(report), [])
 
+  // ----------------------------------------------------------- cocktails
+
+  /** Appends a cocktail and makes it the one being edited. */
+  const addCocktail = useCallback((fields: Partial<Cocktail>) => {
+    const entry = newCocktail(fields)
+    setMenu((m) => ({ ...m, cocktails: [...m.cocktails, entry] }))
+    setSelectedId(entry.id)
+  }, [])
+
   /**
-   * Builds a real PDF file and hands it to the browser as a download.
-   *
-   * This is the primary export rather than window.print(), because on a phone
-   * the print dialog either produces a print job or nothing at all, and in an
-   * in-app browser it silently does neither. A downloaded file works
-   * everywhere.
-   *
-   * jsPDF and the embedded fonts are a large dependency that most sessions
-   * never need, so they load on demand rather than at startup.
+   * Copies a database record into the menu. Everything is copied by value and
+   * is editable from that moment; the menu keeps no link back to the record.
    */
+  const onAddDrink = useCallback(
+    (drink: Drink, useInstructions: boolean) => {
+      addCocktail({
+        name: drink.name,
+        ingredients: poursToLine(drink.pours),
+        description: useInstructions ? drink.instructions : '',
+      })
+      setInspecting(null)
+    },
+    [addCocktail],
+  )
+
+  const onAddManual = useCallback(
+    (name: string) => addCocktail({ name }),
+    [addCocktail],
+  )
+
+  const onPatchSelected = useCallback(
+    (patch: Partial<Cocktail>) => {
+      setMenu((m) => ({
+        ...m,
+        cocktails: m.cocktails.map((c) => (c.id === selectedId ? { ...c, ...patch } : c)),
+      }))
+    },
+    [selectedId],
+  )
+
+  const onMoveSelected = useCallback(
+    (delta: number) => {
+      setMenu((m) => {
+        const i = m.cocktails.findIndex((c) => c.id === selectedId)
+        const target = i + delta
+        if (i < 0 || target < 0 || target >= m.cocktails.length) return m
+        const next = [...m.cocktails]
+        const [item] = next.splice(i, 1)
+        next.splice(target, 0, item)
+        return { ...m, cocktails: next }
+      })
+    },
+    [selectedId],
+  )
+
+  const onRemoveSelected = useCallback(() => {
+    setMenu((m) => {
+      const i = m.cocktails.findIndex((c) => c.id === selectedId)
+      if (i < 0) return m
+      const next = m.cocktails.filter((c) => c.id !== selectedId)
+      // Select the neighbour that takes its place, so the editor is never
+      // left pointing at nothing after a delete.
+      setSelectedId(next[Math.min(i, next.length - 1)]?.id ?? null)
+      return { ...m, cocktails: next }
+    })
+  }, [selectedId])
+
+  /** Selecting from the sheet on a phone has to bring the editor forward. */
+  const onSelectFromPage = useCallback((id: string) => {
+    setSelectedId(id)
+    if (window.matchMedia('(max-width: 860px)').matches) setMobileTab('edit')
+  }, [])
+
+  // ------------------------------------------------------------- library
+
+  const onSaveMenu = useCallback(
+    (name: string) => setSaved(saveMenu(name, menu)),
+    [menu],
+  )
+
+  const onLoadMenu = useCallback((id: string) => {
+    const loaded = loadSaved(id)
+    if (!loaded) return
+    setMenu(loaded)
+    setSelectedId(loaded.cocktails[0]?.id ?? null)
+  }, [])
+
+  const onDeleteMenu = useCallback((id: string) => setSaved(deleteSaved(id)), [])
+
+  // ------------------------------------------------------------- outputs
+
   const onDownloadPdf = useCallback(async () => {
     const page = pageRef.current
     if (!page) return
@@ -120,9 +211,7 @@ export default function App() {
 
   return (
     <div className="app" data-mobile-tab={mobileTab}>
-      {/* Only rendered on narrow screens; see the media query in styles.css.
-          Side by side there is no room for both panes, and stacking them put
-          the sheet below a long form where it was never seen. */}
+      {/* Only rendered on narrow screens; see the media query in styles.css. */}
       <div className="tabs" role="tablist" aria-label="Editor or preview">
         <button
           type="button"
@@ -145,6 +234,17 @@ export default function App() {
       <Editor
         menu={menu}
         setMenu={setMenu}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        onInspectDrink={setInspecting}
+        onAddManual={onAddManual}
+        onPatchSelected={onPatchSelected}
+        onMoveSelected={onMoveSelected}
+        onRemoveSelected={onRemoveSelected}
+        saved={saved}
+        onSaveMenu={onSaveMenu}
+        onLoadMenu={onLoadMenu}
+        onDeleteMenu={onDeleteMenu}
         fit={fit}
         onDownloadPdf={onDownloadPdf}
         onPrint={onPrint}
@@ -152,9 +252,24 @@ export default function App() {
         shareState={shareState}
         pdfState={pdfState}
       />
+
       <Preview orientation={menu.orientation} stageRef={stageRef}>
-        <MenuPage menu={menu} onFit={onFit} pageRef={pageRef} />
+        <MenuPage
+          menu={menu}
+          onFit={onFit}
+          pageRef={pageRef}
+          selectedId={selectedId}
+          onSelectCocktail={onSelectFromPage}
+        />
       </Preview>
+
+      {inspecting && (
+        <DrinkModal
+          drink={inspecting}
+          onAdd={onAddDrink}
+          onClose={() => setInspecting(null)}
+        />
+      )}
     </div>
   )
 }

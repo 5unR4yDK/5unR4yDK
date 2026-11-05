@@ -98,12 +98,15 @@ body {
 
 .field { display: flex; flex-direction: column; gap: 6px; }
 
-.field > label {
+.field > label,
+.field__label {
+  display: block;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--charcoal-500);
+  margin: 0;
 }
 
 input, textarea {
@@ -420,6 +423,266 @@ button:disabled { opacity: 0.45; cursor: default; }
 
 .cell--empty { opacity: 0.3; }
 
+/*
+ * The sheet doubles as the list: clicking a cocktail on the page selects it
+ * for editing, so the console needs no second scrolling copy of the menu.
+ *
+ * The highlight is an outline rather than a background on purpose. The PDF
+ * exporter fills a rectangle for every element with a non-transparent
+ * background, so a background highlight would be drawn into the exported
+ * file; outlines are never read.
+ */
+.cell--pick { cursor: pointer; border-radius: var(--r-btn); }
+
+.cell--pick:hover { outline: 1px solid rgba(250, 248, 245, 0.22); outline-offset: 5px; }
+
+.cell--selected,
+.cell--selected:hover { outline: 1px solid var(--gold); outline-offset: 5px; }
+
+/* ---------------------------------------------------------------- search */
+
+.search { position: relative; display: flex; flex-direction: column; gap: 6px; }
+
+input[type='search'] { appearance: none; }
+
+/*
+ * Results hang over the console rather than pushing it down, and close on an
+ * outside click. A permanent results panel would be a second scrolling list
+ * of cocktails next to the one being built, which is the duplication this
+ * layout exists to avoid.
+ */
+.search__panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin-top: 6px;
+  max-height: 330px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: var(--r-card);
+  box-shadow: 0 18px 40px rgba(26, 26, 26, 0.18);
+  padding: 5px;
+}
+
+.search__state { margin: 0; padding: 12px; font-size: 12px; color: var(--charcoal-500); }
+.search__state--error { color: var(--gold-dark); }
+
+.search__hit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 13px;
+  border-radius: var(--r-btn);
+}
+
+.search__hit:hover { background: var(--cream-200); }
+
+.search__hit img,
+.search__hit-noimg {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--r-btn);
+  flex: 0 0 auto;
+  background: var(--cream-300);
+}
+
+.search__hit-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.search__hit-name { font-weight: 600; }
+
+.search__hit-meta {
+  font-size: 11px;
+  color: var(--charcoal-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search__manual {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 11px 7px;
+  text-align: left;
+  color: var(--gold-dark);
+  background: rgba(201, 162, 39, 0.1);
+  border-radius: var(--r-btn);
+  font-size: 11px;
+}
+
+.search__manual:hover { background: rgba(201, 162, 39, 0.2); }
+
+/* ---------------------------------------------------------------- roster */
+
+.roster { display: flex; flex-direction: column; gap: 8px; }
+.roster__chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/*
+ * The whole menu at a glance in a few wrapping rows. This is what replaced a
+ * vertical stack of edit forms, one per cocktail, which repeated the sheet
+ * and turned a long menu into a long scroll.
+ */
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  border-radius: var(--r-btn);
+  background: #fff;
+  color: var(--charcoal);
+  max-width: 100%;
+}
+
+.chip:hover { background: var(--cream-300); }
+
+.chip[aria-pressed='true'] { background: var(--charcoal); color: var(--cream); }
+.chip[aria-pressed='true'] .chip__num { color: var(--gold); }
+
+.chip__num { font-size: 10px; color: var(--charcoal-500); font-variant-numeric: tabular-nums; }
+.chip em { font-style: italic; opacity: 0.6; }
+
+/* ------------------------------------------------------------- inspector */
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  border-radius: var(--r-card);
+  padding: 14px;
+}
+
+.inspector--empty { background: transparent; padding: 4px 0; }
+.inspector__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* --------------------------------------------------------------- library */
+
+.library { display: flex; flex-direction: column; gap: 8px; }
+
+.library__toggle {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--charcoal-500);
+}
+
+.library__toggle:hover { color: var(--charcoal); }
+
+.library__body { display: flex; flex-direction: column; gap: 8px; }
+.library__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.library__list li { display: flex; align-items: center; gap: 4px; }
+
+.library__open {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  background: #fff;
+  border-radius: var(--r-btn);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.library__open:hover { background: var(--cream-300); }
+.library__meta { font-size: 10px; font-weight: 400; color: var(--charcoal-500); white-space: nowrap; }
+
+/* ----------------------------------------------------------------- modal */
+
+.modal__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(26, 26, 26, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--cream);
+  border-radius: var(--r-card);
+  width: min(560px, 100%);
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 30px 70px rgba(26, 26, 26, 0.4);
+}
+
+.modal__head { display: flex; align-items: flex-start; gap: 14px; }
+.modal__thumb { width: 84px; height: 84px; object-fit: cover; border-radius: var(--r-card); flex: 0 0 auto; }
+.modal__close { margin-left: auto; }
+
+.modal__title {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0 0 8px;
+}
+
+.badges { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--charcoal);
+  color: var(--cream);
+  padding: 4px 7px;
+  border-radius: var(--r-btn);
+}
+
+.modal__body { display: flex; flex-direction: column; gap: 16px; }
+.modal__body section { display: flex; flex-direction: column; gap: 8px; }
+
+.pours { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.pours li {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  background: #fff;
+  border-radius: var(--r-btn);
+  padding: 7px 10px;
+}
+
+.pours__measure {
+  flex: 0 0 92px;
+  color: var(--charcoal-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.pours__name { font-weight: 600; }
+
+.modal__instructions { margin: 0; font-size: 13px; line-height: 1.6; }
+.modal__asline { font-style: italic; }
+.modal__foot { display: flex; flex-wrap: wrap; gap: 8px; }
+.modal__foot > button { flex: 1 1 auto; }
+.modal__note { text-align: center; }
+
 /* --------------------------------------------------------------- mobile */
 
 .tabs { display: none; }
@@ -475,4 +738,5 @@ button:disabled { opacity: 0.45; cursor: default; }
   .preview__stage { transform: none !important; width: auto !important; height: auto !important; }
   .preview .page { box-shadow: none; }
   .page { break-inside: avoid; }
+  .cell--pick, .cell--selected { outline: none !important; cursor: auto; }
 }
