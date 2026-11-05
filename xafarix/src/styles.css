@@ -443,7 +443,22 @@ button:disabled { opacity: 0.45; cursor: default; }
 
 .search { position: relative; display: flex; flex-direction: column; gap: 6px; }
 
-input[type='search'] { appearance: none; }
+input[type='search'] { appearance: none; -webkit-appearance: none; }
+
+/* WebKit's own clear button is a blue disc that ignores the palette. Same
+   control, redrawn as a charcoal cross. */
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  cursor: pointer;
+  background: var(--charcoal-500);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+input[type='search']::-webkit-search-cancel-button:hover { background: var(--charcoal); }
 
 /*
  * Results hang over the console rather than pushing it down, and close on an
@@ -496,7 +511,19 @@ input[type='search'] { appearance: none; }
 }
 
 .search__hit-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.search__hit-name { font-weight: 600; }
+.search__hit-name { font-weight: 600; display: flex; align-items: center; gap: 7px; }
+
+.search__onmenu {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  background: rgba(201, 162, 39, 0.14);
+  padding: 3px 6px;
+  border-radius: var(--r-btn);
+  white-space: nowrap;
+}
 
 .search__hit-meta {
   font-size: 11px;

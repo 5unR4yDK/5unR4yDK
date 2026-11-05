@@ -11,6 +11,8 @@ import Roster from './Roster'
 
 interface Props {
   menu: Menu
+  /** Changes after a successful add, which remounts the search empty. */
+  searchKey: number
   setMenu: (m: Menu) => void
   selectedId: string | null
   onSelect: (id: string) => void
@@ -33,6 +35,7 @@ interface Props {
 
 export default function Editor({
   menu,
+  searchKey,
   setMenu,
   selectedId,
   onSelect,
@@ -58,6 +61,10 @@ export default function Editor({
   const index = menu.cocktails.findIndex((c) => c.id === selectedId)
   const selected = index >= 0 ? menu.cocktails[index] : null
 
+  const existingNames = new Set(
+    menu.cocktails.map((c) => c.name.trim().toLowerCase()).filter(Boolean),
+  )
+
   const tooSmall = fit !== null && menu.cocktails.length > 0 && fit.bodyPt < MIN_BODY_PT
 
   return (
@@ -67,7 +74,12 @@ export default function Editor({
         <span className="overline">One-page cocktail menus</span>
       </div>
 
-      <CocktailSearch onInspect={onInspectDrink} onAddManual={onAddManual} />
+      <CocktailSearch
+        key={searchKey}
+        existingNames={existingNames}
+        onInspect={onInspectDrink}
+        onAddManual={onAddManual}
+      />
 
       <Roster cocktails={menu.cocktails} selectedId={selectedId} onSelect={onSelect} />
 

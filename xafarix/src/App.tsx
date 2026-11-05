@@ -51,6 +51,13 @@ export default function App() {
     () => initialMenu().cocktails[0]?.id ?? null,
   )
   const [inspecting, setInspecting] = useState<Drink | null>(null)
+  /**
+   * Bumped after a database drink is added, remounting the search with an
+   * empty box so the next name can be typed straight away. Only on a
+   * successful add: cancelling the recipe sheet keeps the query, because the
+   * likely next move is picking a different result from the same list.
+   */
+  const [searchKey, setSearchKey] = useState(0)
   const [saved, setSaved] = useState<SavedMenu[]>(() => listSaved())
   const [fit, setFit] = useState<FitReport | null>(null)
   const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle')
@@ -91,6 +98,7 @@ export default function App() {
         description: useInstructions ? drink.instructions : '',
       })
       setInspecting(null)
+      setSearchKey((k) => k + 1)
     },
     [addCocktail],
   )
@@ -233,6 +241,7 @@ export default function App() {
 
       <Editor
         menu={menu}
+        searchKey={searchKey}
         setMenu={setMenu}
         selectedId={selectedId}
         onSelect={setSelectedId}

@@ -6,6 +6,8 @@ import type { Drink } from '../cocktaildb'
 const DEBOUNCE_MS = 350
 
 interface Props {
+  /** Names already on the menu, lower-cased, so results can be marked. */
+  existingNames: ReadonlySet<string>
   /** Opens the detail sheet for a result. */
   onInspect: (drink: Drink) => void
   /** Adds a blank entry under the typed name, for drinks not in the database. */
@@ -19,7 +21,7 @@ interface Props {
  * the console already shows the menu's own cocktails, and a second permanent
  * list of candidates is the thing that makes these tools feel endless.
  */
-export default function CocktailSearch({ onInspect, onAddManual }: Props) {
+export default function CocktailSearch({ existingNames, onInspect, onAddManual }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Drink[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -143,7 +145,15 @@ export default function CocktailSearch({ onInspect, onAddManual }: Props) {
                   <span className="search__hit-noimg" aria-hidden="true" />
                 )}
                 <span className="search__hit-text">
-                  <span className="search__hit-name">{drink.name}</span>
+                  <span className="search__hit-name">
+                    {drink.name}
+                    {/* Marked, not blocked: two takes on one drink can be
+                        deliberate, but adding it twice by accident is the
+                        common case. */}
+                    {existingNames.has(drink.name.trim().toLowerCase()) && (
+                      <span className="search__onmenu">On menu</span>
+                    )}
+                  </span>
                   <span className="search__hit-meta">
                     {[drink.category, drink.glass].filter(Boolean).join(' · ')}
                   </span>
