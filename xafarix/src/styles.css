@@ -1,0 +1,769 @@
+/*
+ * Design tokens taken from republic.show's own stylesheet, not matched by eye.
+ * The venue's site pairs Montserrat (300–900) with Cormorant Garamond, sets
+ * near-black cards on a cream canvas at a 3px radius, and uses one gold for
+ * every call to action.
+ */
+:root {
+  --cream: #faf8f5;
+  --cream-200: #f5f0e8;
+  --cream-300: #e8ddd0;
+  --cream-400: #d4c4b0;
+  --cream-500: #b8a08a;
+
+  --charcoal: #1a1a1a;
+  --charcoal-light: #2a2a2a;
+  --charcoal-950: #0f0f0f;
+  --charcoal-500: #9a9a9a;
+
+  --gold: #c9a227;
+  --gold-light: #e8d5b0;
+  --gold-dark: #996515;
+
+  --ease-luxury: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --font-sans: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
+  /* The site's card radius is 3px and its button radius 2px. Nearly square,
+     which is most of why it does not look like every other template. */
+  --r-card: 3px;
+  --r-btn: 2px;
+
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+@supports (height: 100dvh) {
+  html, body, #root { height: 100dvh; }
+}
+
+body {
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The site's overline: wide-tracked uppercase Montserrat, used for every
+   small label. It carries the hierarchy, which is why this stylesheet needs
+   no rules or dividers to separate things. */
+.overline {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--charcoal-500);
+}
+
+/* ---------------------------------------------------------------- shell */
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(330px, 410px) 1fr;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------- editor */
+
+/*
+ * The two panes are told apart by tone, not by a dividing line: the form sits
+ * on the lighter cream, the stage on the warmer one.
+ */
+.editor {
+  background: var(--cream);
+  overflow-y: auto;
+  padding: 26px 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.editor__brand { display: flex; flex-direction: column; gap: 4px; }
+
+.editor__brand h1 {
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field > label,
+.field__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--charcoal-500);
+  margin: 0;
+}
+
+input, textarea {
+  font: inherit;
+  font-size: 13px;
+  color: var(--charcoal);
+  background: #fff;
+  border: 1px solid rgba(26, 26, 26, 0.14);
+  border-radius: var(--r-card);
+  padding: 9px 11px;
+  width: 100%;
+  resize: vertical;
+  transition: border-color 0.2s var(--ease-luxury), box-shadow 0.2s var(--ease-luxury);
+}
+
+input::placeholder, textarea::placeholder { color: var(--cream-500); }
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+}
+
+.row { display: flex; gap: 12px; }
+.row > * { flex: 1; min-width: 0; }
+
+/* The site sets every call to action the same way: uppercase Montserrat at
+   700, tracked out to 0.12em, on a 2px radius. */
+button {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: var(--charcoal);
+  padding: 11px 16px;
+  line-height: 1;
+  transition: background-color 0.3s var(--ease-luxury), color 0.3s var(--ease-luxury),
+    box-shadow 0.3s var(--ease-luxury), transform 0.3s var(--ease-luxury);
+}
+
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: default; }
+
+.btn--primary {
+  background: var(--gold);
+  color: var(--charcoal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+/* The arrow the venue puts on its RESERVE buttons. */
+.btn--primary::after { content: '→'; font-size: 0.95rem; line-height: 1; }
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--gold-light);
+  box-shadow: 0 12px 24px rgba(201, 162, 39, 0.25);
+}
+
+.btn--outline {
+  border-color: rgba(26, 26, 26, 0.22);
+  color: var(--charcoal);
+}
+
+.btn--outline:hover { background: var(--charcoal); color: var(--cream); border-color: var(--charcoal); }
+
+.btn--add {
+  border: 1px dashed rgba(26, 26, 26, 0.28);
+  color: var(--charcoal-500);
+  padding: 13px 16px;
+}
+
+.btn--add:hover { border-color: var(--gold); color: var(--gold-dark); border-style: solid; }
+
+/* Orientation toggle, marked with a filled block like the mobile tabs. */
+.seg { display: flex; gap: 6px; }
+
+.seg button {
+  flex: 1;
+  border-color: rgba(26, 26, 26, 0.22);
+  color: var(--charcoal-500);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--charcoal);
+  color: var(--cream);
+  border-color: var(--charcoal);
+}
+
+.list { display: flex; flex-direction: column; gap: 10px; }
+
+/* Each cocktail is a white block on the cream. Blocks, not ruled rows. */
+.item {
+  background: #fff;
+  border-radius: var(--r-card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.item__head { display: flex; align-items: center; gap: 10px; }
+
+.item__num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  min-width: 16px;
+}
+
+.item__head input { flex: 1; font-weight: 600; }
+.item__tools { display: flex; gap: 2px; }
+
+.btn--icon {
+  padding: 5px 7px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--charcoal-500);
+  border-radius: var(--r-btn);
+}
+
+.btn--icon:hover:not(:disabled) { background: var(--cream-200); color: var(--charcoal); }
+
+.hint {
+  font-size: 11px;
+  color: var(--charcoal-500);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.warn {
+  font-size: 12px;
+  line-height: 1.5;
+  background: rgba(201, 162, 39, 0.14);
+  color: var(--gold-dark);
+  border-radius: var(--r-card);
+  padding: 10px 12px;
+  margin: 0;
+  font-weight: 500;
+}
+
+/*
+ * Pinned to the foot of the form. Exporting is the point of the app and it
+ * should not be a scroll away behind thirty cocktails. The cream background
+ * carries the separation; there is no rule across the top.
+ */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  bottom: 0;
+  background: var(--cream);
+  padding: 14px 0 22px;
+  margin-top: auto;
+}
+
+/* A short fade so content scrolling under the pinned controls dissolves
+   rather than meeting a hard edge. */
+.actions::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18px;
+  height: 18px;
+  background: linear-gradient(to bottom, rgba(250, 248, 245, 0), var(--cream));
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------- preview */
+
+.preview {
+  background: var(--cream-200);
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px;
+}
+
+/*
+ * Scaled from the top-left, not the centre: the wrapper's layout box is sized
+ * to the *scaled* sheet, so only a top-left origin makes the transformed
+ * content land exactly inside it. Any other origin shifts the sheet sideways
+ * out of its own box.
+ */
+.preview__stage { transform-origin: top left; }
+
+/* ------------------------------------------------------------ the sheet */
+
+/*
+ * .page is the physical sheet. Its dimensions are in millimetres so that the
+ * thing on screen and the thing that comes out of the printer are the same
+ * object, scaled. Nothing here depends on the viewport.
+ *
+ * Charcoal rather than pure black, which is the colour the venue sets its own
+ * cards in.
+ */
+.page {
+  background: var(--charcoal);
+  color: var(--cream);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Keep the dark background when printing instead of letting the browser
+     helpfully drop it to save ink. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.preview .page { box-shadow: 0 20px 45px rgba(26, 26, 26, 0.18); }
+
+.page__header {
+  text-align: center;
+  flex: 0 0 auto;
+  padding-bottom: 7mm;
+}
+
+.page__title {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 13mm;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+
+/* The venue's overline treatment, in its gold. */
+.page__subtitle {
+  font-family: var(--font-sans);
+  font-size: 3mm;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 3mm 0 0;
+}
+
+.page__grid {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: var(--gap);
+  min-height: 0;
+}
+
+.cell {
+  flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
+  height: calc((100% - (var(--rows) - 1) * var(--gap)) / var(--rows));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/*
+ * With more than one row, content sits at the top of its cell so that the
+ * cocktail names line up across the row. Centring each cell independently
+ * makes neighbours whose descriptions wrap to a different number of lines
+ * drift out of alignment, which is the clearest tell of an auto-generated
+ * page. A single row has nothing to align against, so it stays centred.
+ */
+.page__grid--stacked .cell { justify-content: flex-start; }
+
+.cell__name {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: var(--fs);
+  line-height: 1.02;
+  margin: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  text-wrap: balance;
+}
+
+/* Italic Cormorant, the same treatment the venue gives its taglines. */
+.cell__desc {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: calc(var(--fs) * var(--sub) * 1.02);
+  line-height: 1.25;
+  margin: calc(var(--fs) * 0.16) 0 0;
+  color: rgba(250, 248, 245, 0.72);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+/* The functional line, so it takes the sans. */
+.cell__ing {
+  font-family: var(--font-sans);
+  font-size: calc(var(--fs) * var(--sub) * 0.66);
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 1.45;
+  margin: calc(var(--fs) * 0.2) 0 0;
+  color: rgba(250, 248, 245, 0.93);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.cell--empty { opacity: 0.3; }
+
+/*
+ * The sheet doubles as the list: clicking a cocktail on the page selects it
+ * for editing, so the console needs no second scrolling copy of the menu.
+ *
+ * The highlight is an outline rather than a background on purpose. The PDF
+ * exporter fills a rectangle for every element with a non-transparent
+ * background, so a background highlight would be drawn into the exported
+ * file; outlines are never read.
+ */
+.cell--pick { cursor: pointer; border-radius: var(--r-btn); }
+
+.cell--pick:hover { outline: 1px solid rgba(250, 248, 245, 0.22); outline-offset: 5px; }
+
+.cell--selected,
+.cell--selected:hover { outline: 1px solid var(--gold); outline-offset: 5px; }
+
+/* ---------------------------------------------------------------- search */
+
+.search { position: relative; display: flex; flex-direction: column; gap: 6px; }
+
+input[type='search'] { appearance: none; -webkit-appearance: none; }
+
+/* WebKit's own clear button is a blue disc that ignores the palette. Same
+   control, redrawn as a charcoal cross. */
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  cursor: pointer;
+  background: var(--charcoal-500);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+input[type='search']::-webkit-search-cancel-button:hover { background: var(--charcoal); }
+
+/*
+ * Results hang over the console rather than pushing it down, and close on an
+ * outside click. A permanent results panel would be a second scrolling list
+ * of cocktails next to the one being built, which is the duplication this
+ * layout exists to avoid.
+ */
+.search__panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin-top: 6px;
+  max-height: 330px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: var(--r-card);
+  box-shadow: 0 18px 40px rgba(26, 26, 26, 0.18);
+  padding: 5px;
+}
+
+.search__state { margin: 0; padding: 12px; font-size: 12px; color: var(--charcoal-500); }
+.search__state--error { color: var(--gold-dark); }
+
+.search__hit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 13px;
+  border-radius: var(--r-btn);
+}
+
+.search__hit:hover { background: var(--cream-200); }
+
+.search__hit img,
+.search__hit-noimg {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--r-btn);
+  flex: 0 0 auto;
+  background: var(--cream-300);
+}
+
+.search__hit-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.search__hit-name { font-weight: 600; display: flex; align-items: center; gap: 7px; }
+
+.search__onmenu {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  background: rgba(201, 162, 39, 0.14);
+  padding: 3px 6px;
+  border-radius: var(--r-btn);
+  white-space: nowrap;
+}
+
+.search__hit-meta {
+  font-size: 11px;
+  color: var(--charcoal-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search__manual {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 11px 7px;
+  text-align: left;
+  color: var(--gold-dark);
+  background: rgba(201, 162, 39, 0.1);
+  border-radius: var(--r-btn);
+  font-size: 11px;
+}
+
+.search__manual:hover { background: rgba(201, 162, 39, 0.2); }
+
+/* ---------------------------------------------------------------- roster */
+
+.roster { display: flex; flex-direction: column; gap: 8px; }
+.roster__chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/*
+ * The whole menu at a glance in a few wrapping rows. This is what replaced a
+ * vertical stack of edit forms, one per cocktail, which repeated the sheet
+ * and turned a long menu into a long scroll.
+ */
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  border-radius: var(--r-btn);
+  background: #fff;
+  color: var(--charcoal);
+  max-width: 100%;
+}
+
+.chip:hover { background: var(--cream-300); }
+
+.chip[aria-pressed='true'] { background: var(--charcoal); color: var(--cream); }
+.chip[aria-pressed='true'] .chip__num { color: var(--gold); }
+
+.chip__num { font-size: 10px; color: var(--charcoal-500); font-variant-numeric: tabular-nums; }
+.chip em { font-style: italic; opacity: 0.6; }
+
+/* ------------------------------------------------------------- inspector */
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  border-radius: var(--r-card);
+  padding: 14px;
+}
+
+.inspector--empty { background: transparent; padding: 4px 0; }
+.inspector__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* --------------------------------------------------------------- library */
+
+.library { display: flex; flex-direction: column; gap: 8px; }
+
+.library__toggle {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--charcoal-500);
+}
+
+.library__toggle:hover { color: var(--charcoal); }
+
+.library__body { display: flex; flex-direction: column; gap: 8px; }
+.library__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.library__list li { display: flex; align-items: center; gap: 4px; }
+
+.library__open {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  background: #fff;
+  border-radius: var(--r-btn);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.library__open:hover { background: var(--cream-300); }
+.library__meta { font-size: 10px; font-weight: 400; color: var(--charcoal-500); white-space: nowrap; }
+
+/* ----------------------------------------------------------------- modal */
+
+.modal__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(26, 26, 26, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--cream);
+  border-radius: var(--r-card);
+  width: min(560px, 100%);
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 30px 70px rgba(26, 26, 26, 0.4);
+}
+
+.modal__head { display: flex; align-items: flex-start; gap: 14px; }
+.modal__thumb { width: 84px; height: 84px; object-fit: cover; border-radius: var(--r-card); flex: 0 0 auto; }
+.modal__close { margin-left: auto; }
+
+.modal__title {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0 0 8px;
+}
+
+.badges { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--charcoal);
+  color: var(--cream);
+  padding: 4px 7px;
+  border-radius: var(--r-btn);
+}
+
+.modal__body { display: flex; flex-direction: column; gap: 16px; }
+.modal__body section { display: flex; flex-direction: column; gap: 8px; }
+
+.pours { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.pours li {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  background: #fff;
+  border-radius: var(--r-btn);
+  padding: 7px 10px;
+}
+
+.pours__measure {
+  flex: 0 0 92px;
+  color: var(--charcoal-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.pours__name { font-weight: 600; }
+
+.modal__instructions { margin: 0; font-size: 13px; line-height: 1.6; }
+.modal__asline { font-style: italic; }
+.modal__foot { display: flex; flex-wrap: wrap; gap: 8px; }
+.modal__foot > button { flex: 1 1 auto; }
+.modal__note { text-align: center; }
+
+/* --------------------------------------------------------------- mobile */
+
+.tabs { display: none; }
+
+/*
+ * On a phone there is no room for the form and the sheet side by side.
+ * Stacking them was worse than it sounds: the preview pane ended up as the
+ * `1fr` row of an auto-height container, collapsed to a ~56px strip below a
+ * long scrolling form, and because its usable height was zero the shrink-to-
+ * fit never ran and the sheet stayed at full A4 inside that strip. So the two
+ * panes become tabs, and whichever is showing gets the whole viewport.
+ */
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .tabs { display: flex; background: var(--cream-200); padding: 6px; gap: 6px; }
+
+  /* The selected tab is a solid charcoal block rather than an underline —
+     the venue marks state with filled shapes, not rules. */
+  .tabs button {
+    flex: 1;
+    padding: 12px 8px;
+    color: var(--charcoal-500);
+    border-radius: var(--r-btn);
+  }
+
+  .tabs button[aria-selected='true'] { background: var(--charcoal); color: var(--cream); }
+
+  .app[data-mobile-tab='edit'] .preview { display: none; }
+  .app[data-mobile-tab='preview'] .editor { display: none; }
+
+  .preview { padding: 14px; }
+  .editor { padding: 20px 16px 0; }
+}
+
+/* ---------------------------------------------------------------- print */
+
+@media print {
+  html, body, #root { height: auto; overflow: visible; background: #fff; }
+  .app { display: block; height: auto; overflow: visible; }
+  .editor, .tabs { display: none !important; }
+  .preview {
+    display: block;
+    padding: 0;
+    background: none;
+    overflow: visible;
+  }
+  .preview__stage { transform: none !important; width: auto !important; height: auto !important; }
+  .preview .page { box-shadow: none; }
+  .page { break-inside: avoid; }
+  .cell--pick, .cell--selected { outline: none !important; cursor: auto; }
+}
