@@ -31,8 +31,61 @@ body {
   overflow: hidden;
 }
 
+/* The tab bar exists only on narrow screens. */
+.tabs { display: none; }
+
+/*
+ * On a phone there is no room for the form and the sheet side by side.
+ * Stacking them was worse than it sounds: the preview pane ended up as the
+ * `1fr` row of an auto-height container, collapsed to a ~56px strip below a
+ * long scrolling form, and because its usable height was zero the shrink-to-
+ * fit never ran and the sheet stayed at full A4 inside that strip. So the two
+ * panes become tabs, and whichever is showing gets the whole viewport.
+ */
 @media (max-width: 860px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow: auto; }
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--ui-line);
+    background: var(--ui-panel);
+  }
+
+  .tabs button {
+    flex: 1;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 12px 8px;
+    color: var(--ui-muted);
+    border-bottom: 2px solid transparent;
+  }
+
+  .tabs button[aria-selected='true'] {
+    color: var(--ui-text);
+    border-bottom-color: var(--ui-accent);
+    font-weight: 600;
+  }
+
+  .app[data-mobile-tab='edit'] .preview { display: none; }
+  .app[data-mobile-tab='preview'] .editor { display: none; }
+
+  .editor { border-right: 0; }
+  .preview { padding: 12px; }
+}
+
+/*
+ * Mobile browsers shrink the viewport as their toolbars appear, and a plain
+ * 100% height leaves the bottom of the sheet under the toolbar. dvh tracks
+ * the space actually visible.
+ */
+@supports (height: 100dvh) {
+  html, body, #root { height: 100dvh; }
 }
 
 /* --------------------------------------------------------------- editor */
@@ -181,7 +234,13 @@ button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px;
   padding: 28px;
 }
 
-.preview__stage { transform-origin: top center; }
+/*
+ * Scaled from the top-left, not the centre: the wrapper's layout box is sized
+ * to the *scaled* sheet, so only a top-left origin makes the transformed
+ * content land exactly inside it. Any other origin shifts the sheet sideways
+ * out of its own box.
+ */
+.preview__stage { transform-origin: top left; }
 
 /* ------------------------------------------------------------ the sheet */
 
@@ -312,7 +371,7 @@ button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px;
 @media print {
   html, body, #root { height: auto; overflow: visible; background: #fff; }
   .app { display: block; height: auto; overflow: visible; }
-  .editor { display: none !important; }
+  .editor, .tabs { display: none !important; }
   .preview {
     display: block;
     padding: 0;

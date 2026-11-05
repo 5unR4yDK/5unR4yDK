@@ -47,18 +47,43 @@ page the description sits at 28% of a very large name; as the menu gets denser
 that ratio climbs toward parity, because 28% of an already-small name would be
 unreadable.
 
-## Printing
+## Getting the PDF out
 
-The sheet is rendered at true A4 in millimetres and only scaled down by a CSS
-transform for the screen, so what you see is the printed page viewed smaller.
-"Print / Save as PDF" opens the browser's own print dialog; an injected
-`@page` rule sets the sheet size and orientation, and `print-color-adjust:
-exact` keeps the black background even when the user leaves "Background
-graphics" unticked. Output is one page, vector-sharp, with no PDF library and
-no server involved.
+**Download PDF** builds a real file and hands it to the browser. This is the
+primary export because the print dialog is not a usable answer on a phone:
+there it produces a print job, or on an in-app browser nothing at all.
+
+The file is vector text in the same three faces as the preview, typically
+10–25KB, drawn from the geometry the browser actually produced rather than
+from a second layout pass — see `src/pdf/measure.ts`. Every line of text is
+measured where it landed, so the PDF inherits the wrapping, the balanced
+lines and the searched font size instead of trying to recompute them and
+disagreeing. Verified against a screenshot of the same sheet: no horizontal
+offset, under half a pixel vertically, and the rest of the difference is the
+two rasterisers' antialiasing.
+
+The three faces are subset to Latin, Latin-1 Supplement and Latin Extended-A,
+which is what keeps them at 77KB rather than 760KB. Text outside that range
+has no glyph, so the app checks first and points at **Print** instead, which
+uses the browser's complete fonts. jsPDF and the fonts load only when the
+button is pressed; they are not in the initial bundle.
+
+**Print** opens the browser's own dialog, which is still the better path on a
+desktop. An injected `@page` rule sets sheet size and orientation, and
+`print-color-adjust: exact` keeps the black background even when "Background
+graphics" is unticked.
 
 The editor warns when the body text drops below 6pt — at that point the menu
 needs landscape, shorter descriptions, or splitting in two.
+
+## On a phone
+
+The form and the sheet become tabs rather than stacking. Stacked, the preview
+pane was the `1fr` row of an auto-height container: it collapsed to a ~56px
+strip below a long scrolling form, and since its usable height was zero the
+shrink-to-fit never ran, leaving a full-size A4 clipped inside the strip. As
+tabs, whichever pane is showing gets the whole viewport. The sheet re-fits
+when it becomes visible, because a `display: none` sheet cannot be measured.
 
 ## Not in this version
 

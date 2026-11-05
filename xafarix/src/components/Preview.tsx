@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import type { Orientation } from '../types'
 import { PX_PER_MM, pageBox } from '../paper'
 
@@ -13,9 +13,12 @@ import { PX_PER_MM, pageBox } from '../paper'
  */
 export default function Preview({
   orientation,
+  stageRef,
   children,
 }: {
   orientation: Orientation
+  /** Owned by App: the PDF exporter removes this transform while measuring. */
+  stageRef: RefObject<HTMLDivElement>
   children: ReactNode
 }) {
   const paneRef = useRef<HTMLDivElement>(null)
@@ -52,6 +55,7 @@ export default function Preview({
   return (
     <div className="preview" ref={paneRef}>
       <div
+        ref={stageRef}
         className="preview__stage"
         style={{
           transform: `scale(${scale})`,

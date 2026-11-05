@@ -31,10 +31,17 @@ function overflows(cells: HTMLElement[]): boolean {
  *
  * @param page  element carrying the `--fs` variable
  * @param cells the boxes that must not overflow
- * @returns the chosen size in px
+ * @returns the chosen size in px, or 0 if the page is not currently laid out
  */
 export function fitPage(page: HTMLElement, cells: HTMLElement[]): number {
   if (cells.length === 0) return MIN_PX
+
+  // A hidden pane (display: none) reports every box as 0x0, and a zero-height
+  // box never "overflows", so the search would happily conclude that 400px
+  // fits and leave the sheet set to it. Refuse to measure instead, and let the
+  // caller re-run once the element is actually laid out.
+  if (page.clientWidth === 0 || page.clientHeight === 0) return 0
+  if (cells.some((c) => c.clientWidth === 0 && c.clientHeight === 0)) return 0
 
   let lo = MIN_PX
   let hi = MAX_PX

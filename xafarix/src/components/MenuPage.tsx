@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import type { RefObject } from 'react'
 import type { Menu } from '../types'
 import { chooseGrid } from '../layout'
 import { pageBox } from '../paper'
@@ -38,10 +39,11 @@ function gapMm(cellW: number, cellH: number): number {
 interface Props {
   menu: Menu
   onFit?: (report: FitReport) => void
+  /** Owned by App so the PDF exporter can measure the rendered sheet. */
+  pageRef: RefObject<HTMLDivElement>
 }
 
-export default function MenuPage({ menu, onFit }: Props) {
-  const pageRef = useRef<HTMLDivElement>(null)
+export default function MenuPage({ menu, onFit, pageRef }: Props) {
   const gridRef = useRef<HTMLDivElement>(null)
 
   const box = pageBox(menu.orientation)
@@ -57,26 +59,35 @@ export default function MenuPage({ menu, onFit }: Props) {
   const gap = gapMm(box.innerW / grid.cols, box.innerH / grid.rows)
 
   // The whole point of the app: re-solve the type size whenever anything that
-  // could change the fit changes. useLayoutEffect so the user never sees a
-  // frame at the wrong size.
-  const signature = JSON.stringify(items) + menu.title + menu.subtitle + menu.orientation
+  // could change the fit changes.
+  const signature =
+    JSON.stringify(items) + menu.title + menu.subtitle + menu.orientation
 
-  useLayoutEffect(() => {
+  const runFit = useCallback(() => {
     const page = pageRef.current
     const gridEl = gridRef.current
     if (!page || !gridEl) return
     const cells = Array.from(gridEl.querySelectorAll<HTMLElement>('.cell'))
     const namePx = fitPage(page, cells)
+    // 0 means the sheet is not currently laid out (a hidden tab, for
+    // instance). Leave the last good size in place and wait to be called
+    // again rather than reporting a bogus one.
+    if (namePx <= 0) return
     onFit?.({
       namePx,
       bodyPt: namePx * sub * 0.86 * PT_PER_PX,
       cols: grid.cols,
       rows: grid.rows,
     })
-    // onFit is intentionally excluded: it is a reporting callback, and
-    // including it would re-run the search on every parent render.
+    // onFit is a reporting callback; including it would re-run the search on
+    // every parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, grid.cols, grid.rows, sub, gap])
+  }, [sub, grid.cols, grid.rows])
+
+  // useLayoutEffect so the user never sees a frame at the wrong size.
+  useLayoutEffect(() => {
+    runFit()
+  }, [signature, gap, runFit])
 
   // fitty's readme makes the point that any measurement taken before the web
   // font loads is wrong, so the search is repeated once the font is in.
@@ -84,24 +95,23 @@ export default function MenuPage({ menu, onFit }: Props) {
     if (!('fonts' in document)) return
     let cancelled = false
     document.fonts.ready.then(() => {
-      if (cancelled) return
-      const page = pageRef.current
-      const gridEl = gridRef.current
-      if (!page || !gridEl) return
-      const cells = Array.from(gridEl.querySelectorAll<HTMLElement>('.cell'))
-      const namePx = fitPage(page, cells)
-      onFit?.({
-        namePx,
-        bodyPt: namePx * sub * 0.86 * PT_PER_PX,
-        cols: grid.cols,
-        rows: grid.rows,
-      })
+      if (!cancelled) runFit()
     })
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, grid.cols, grid.rows, sub])
+  }, [signature, runFit])
+
+  // On a phone the sheet lives in a tab and is display:none until selected,
+  // which means its first fit happened against a zero-size box and was
+  // skipped. Watching its box catches the moment it becomes real.
+  useEffect(() => {
+    const page = pageRef.current
+    if (!page || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => runFit())
+    ro.observe(page)
+    return () => ro.disconnect()
+  }, [runFit, pageRef])
 
   const hasHeader = menu.title.trim() !== '' || menu.subtitle.trim() !== ''
 

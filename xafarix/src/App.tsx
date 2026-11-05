@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Menu } from './types'
 import Editor from './components/Editor'
 import MenuPage from './components/MenuPage'
@@ -8,6 +8,14 @@ import { sampleMenu } from './sample'
 import { loadFromHash, loadLocal, saveLocal, shareUrl } from './storage'
 
 const PAGE_STYLE_ID = 'xafarix-page-size'
+
+export type PdfState =
+  | { kind: 'idle' }
+  | { kind: 'working' }
+  | { kind: 'done' }
+  | { kind: 'error'; message: string }
+
+export type MobileTab = 'edit' | 'preview'
 
 /**
  * `@page` cannot be written with a CSS custom property, so the rule that tells
@@ -35,19 +43,65 @@ export default function App() {
   const [menu, setMenu] = useState<Menu>(initialMenu)
   const [fit, setFit] = useState<FitReport | null>(null)
   const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const [pdfState, setPdfState] = useState<PdfState>({ kind: 'idle' })
+  const [mobileTab, setMobileTab] = useState<MobileTab>('edit')
+
+  const pageRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
 
   usePageSizeRule(menu.orientation)
 
   useEffect(() => {
     saveLocal(menu)
     setShareState('idle')
+    setPdfState({ kind: 'idle' })
   }, [menu])
 
   const onFit = useCallback((report: FitReport) => setFit(report), [])
 
+  /**
+   * Builds a real PDF file and hands it to the browser as a download.
+   *
+   * This is the primary export rather than window.print(), because on a phone
+   * the print dialog either produces a print job or nothing at all, and in an
+   * in-app browser it silently does neither. A downloaded file works
+   * everywhere.
+   *
+   * jsPDF and the embedded fonts are a large dependency that most sessions
+   * never need, so they load on demand rather than at startup.
+   */
+  const onDownloadPdf = useCallback(async () => {
+    const page = pageRef.current
+    if (!page) return
+    setPdfState({ kind: 'working' })
+    try {
+      const { generatePdf, downloadPdf, uncoveredCharacters } = await import(
+        './pdf/generatePdf'
+      )
+      const allText = [
+        menu.title,
+        menu.subtitle,
+        ...menu.cocktails.flatMap((c) => [c.name, c.description, c.ingredients]),
+      ].join('')
+      const missing = uncoveredCharacters(allText)
+      if (missing.length > 0) {
+        setPdfState({
+          kind: 'error',
+          message: `The embedded fonts don't cover ${missing.join(' ')}. Use Print instead — your browser has the complete fonts.`,
+        })
+        return
+      }
+      downloadPdf(generatePdf(page, stageRef.current, menu.title))
+      setPdfState({ kind: 'done' })
+    } catch (err) {
+      setPdfState({
+        kind: 'error',
+        message: err instanceof Error ? err.message : 'Could not create the PDF.',
+      })
+    }
+  }, [menu])
+
   const onPrint = useCallback(() => {
-    // The fit has already run synchronously in a layout effect, so the page is
-    // correct by the time the dialog opens.
     window.print()
   }, [])
 
@@ -65,17 +119,41 @@ export default function App() {
   }, [menu])
 
   return (
-    <div className="app">
+    <div className="app" data-mobile-tab={mobileTab}>
+      {/* Only rendered on narrow screens; see the media query in styles.css.
+          Side by side there is no room for both panes, and stacking them put
+          the sheet below a long form where it was never seen. */}
+      <div className="tabs" role="tablist" aria-label="Editor or preview">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === 'edit'}
+          onClick={() => setMobileTab('edit')}
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === 'preview'}
+          onClick={() => setMobileTab('preview')}
+        >
+          Preview{fit ? ` · ${fit.cols}×${fit.rows}` : ''}
+        </button>
+      </div>
+
       <Editor
         menu={menu}
         setMenu={setMenu}
         fit={fit}
+        onDownloadPdf={onDownloadPdf}
         onPrint={onPrint}
         onShare={onShare}
         shareState={shareState}
+        pdfState={pdfState}
       />
-      <Preview orientation={menu.orientation}>
-        <MenuPage menu={menu} onFit={onFit} />
+      <Preview orientation={menu.orientation} stageRef={stageRef}>
+        <MenuPage menu={menu} onFit={onFit} pageRef={pageRef} />
       </Preview>
     </div>
   )

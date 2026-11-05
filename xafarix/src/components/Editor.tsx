@@ -2,23 +2,28 @@ import type { Cocktail, Menu, Orientation } from '../types'
 import { newCocktail } from '../types'
 import type { FitReport } from './MenuPage'
 import { MIN_BODY_PT } from './MenuPage'
+import type { PdfState } from '../App'
 
 interface Props {
   menu: Menu
   setMenu: (m: Menu) => void
   fit: FitReport | null
+  onDownloadPdf: () => void
   onPrint: () => void
   onShare: () => void
   shareState: 'idle' | 'copied' | 'failed'
+  pdfState: PdfState
 }
 
 export default function Editor({
   menu,
   setMenu,
   fit,
+  onDownloadPdf,
   onPrint,
   onShare,
   shareState,
+  pdfState,
 }: Props) {
   const patch = (p: Partial<Menu>) => setMenu({ ...menu, ...p })
 
@@ -170,8 +175,19 @@ export default function Editor({
 
       <div className="divider" />
 
-      <button type="button" className="btn--primary" onClick={onPrint}>
-        Print / Save as PDF
+      <button
+        type="button"
+        className="btn--primary"
+        onClick={onDownloadPdf}
+        disabled={pdfState.kind === 'working'}
+      >
+        {pdfState.kind === 'working' ? 'Making PDF…' : 'Download PDF'}
+      </button>
+
+      {pdfState.kind === 'error' && <p className="warn">{pdfState.message}</p>}
+
+      <button type="button" className="btn--ghost" onClick={onPrint}>
+        Print
       </button>
 
       <button type="button" className="btn--ghost" onClick={onShare}>
