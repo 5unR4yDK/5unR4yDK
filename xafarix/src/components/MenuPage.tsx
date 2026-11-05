@@ -13,7 +13,7 @@ export const MIN_BODY_PT = 6
 export interface FitReport {
   /** Chosen base (cocktail name) size, in px at 96dpi. */
   namePx: number
-  /** Resulting body copy size, in points on paper. */
+  /** The smallest text actually rendered on the sheet, in points on paper. */
   bodyPt: number
   cols: number
   rows: number
@@ -27,6 +27,25 @@ export interface FitReport {
  * and holding the description at 28% would make it illegible — so the ratio
  * climbs towards parity as the menu gets denser.
  */
+/**
+ * The size of the smallest text actually on the sheet, in points.
+ *
+ * Measured rather than derived. The secondary sizes are fractions set in CSS,
+ * and recomputing them here would be a second copy of those numbers that
+ * silently goes stale the moment the stylesheet is retuned — which is exactly
+ * what happened when the type scale changed and this still reported a size no
+ * element had.
+ */
+function smallestTextPt(gridEl: HTMLElement, fallbackPx: number): number {
+  const probes = gridEl.querySelectorAll<HTMLElement>('.cell__ing, .cell__desc')
+  let smallest = Infinity
+  for (const el of probes) {
+    const px = parseFloat(getComputedStyle(el).fontSize)
+    if (Number.isFinite(px) && px > 0) smallest = Math.min(smallest, px)
+  }
+  return (Number.isFinite(smallest) ? smallest : fallbackPx) * PT_PER_PX
+}
+
 function subRatio(n: number): number {
   const t = Math.min(1, Math.max(0, (n - 1) / 19))
   return 0.28 + (0.66 - 0.28) * t
@@ -75,7 +94,7 @@ export default function MenuPage({ menu, onFit, pageRef }: Props) {
     if (namePx <= 0) return
     onFit?.({
       namePx,
-      bodyPt: namePx * sub * 0.86 * PT_PER_PX,
+      bodyPt: smallestTextPt(gridEl, namePx),
       cols: grid.cols,
       rows: grid.rows,
     })
@@ -134,7 +153,6 @@ export default function MenuPage({ menu, onFit, pageRef }: Props) {
         <header className="page__header">
           {menu.title.trim() !== '' && <h2 className="page__title">{menu.title}</h2>}
           {menu.subtitle.trim() !== '' && <p className="page__subtitle">{menu.subtitle}</p>}
-          <div className="page__rule" />
         </header>
       )}
 

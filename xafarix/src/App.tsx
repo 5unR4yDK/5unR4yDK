@@ -91,7 +91,7 @@ export default function App() {
         })
         return
       }
-      downloadPdf(generatePdf(page, stageRef.current, menu.title))
+      downloadPdf(await generatePdf(page, stageRef.current, menu.title))
       setPdfState({ kind: 'done' })
     } catch (err) {
       setPdfState({

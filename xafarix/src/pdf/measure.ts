@@ -22,6 +22,8 @@ export interface TextLine {
   fontStyle: string
   /** Rendered size in CSS px. */
   fontSizePx: number
+  /** Numeric weight, used to pick between the regular and semibold faces. */
+  fontWeight: number
   /** Solid RGB after compositing any alpha over the page background. */
   color: [number, number, number]
 }
@@ -206,6 +208,7 @@ export function snapshotPage(page: HTMLElement): PageSnapshot {
         fontFamily: style.fontFamily,
         fontStyle: style.fontStyle,
         fontSizePx: parseFloat(style.fontSize),
+        fontWeight: Number.parseInt(style.fontWeight, 10) || 400,
         color,
       }
 

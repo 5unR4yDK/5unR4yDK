@@ -54,7 +54,7 @@ export default function Editor({
     <div className="editor">
       <div className="editor__brand">
         <h1>Xafarix</h1>
-        <span>one-page cocktail menus</span>
+        <span className="overline">One-page cocktail menus</span>
       </div>
 
       <div className="row">
@@ -97,8 +97,6 @@ export default function Editor({
           </button>
         </div>
       </div>
-
-      <div className="divider" />
 
       <div className="list">
         {menu.cocktails.map((c, i) => (
@@ -161,7 +159,7 @@ export default function Editor({
         ))}
       </div>
 
-      <button type="button" onClick={add}>
+      <button type="button" className="btn--add" onClick={add}>
         + Add cocktail
       </button>
 
@@ -173,30 +171,7 @@ export default function Editor({
         </p>
       )}
 
-      <div className="divider" />
-
-      <button
-        type="button"
-        className="btn--primary"
-        onClick={onDownloadPdf}
-        disabled={pdfState.kind === 'working'}
-      >
-        {pdfState.kind === 'working' ? 'Making PDF…' : 'Download PDF'}
-      </button>
-
       {pdfState.kind === 'error' && <p className="warn">{pdfState.message}</p>}
-
-      <button type="button" className="btn--ghost" onClick={onPrint}>
-        Print
-      </button>
-
-      <button type="button" className="btn--ghost" onClick={onShare}>
-        {shareState === 'copied'
-          ? '✓ Link copied'
-          : shareState === 'failed'
-            ? 'Copy failed — link is in the address bar'
-            : 'Copy shareable link'}
-      </button>
 
       <p className="hint">
         {fit
@@ -208,6 +183,30 @@ export default function Editor({
         Your menu is saved in this browser and nowhere else. There is no account and no
         server — the shareable link carries the whole menu inside it.
       </p>
+
+      <div className="actions">
+        <button
+          type="button"
+          className="btn--primary"
+          onClick={onDownloadPdf}
+          disabled={pdfState.kind === 'working'}
+        >
+          {pdfState.kind === 'working' ? 'Making PDF' : 'Download PDF'}
+        </button>
+
+        <div className="row">
+          <button type="button" className="btn--outline" onClick={onPrint}>
+            Print
+          </button>
+          <button type="button" className="btn--outline" onClick={onShare}>
+            {shareState === 'copied'
+              ? 'Link copied'
+              : shareState === 'failed'
+                ? 'Copy failed'
+                : 'Share link'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

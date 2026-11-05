@@ -1,237 +1,295 @@
+/*
+ * Design tokens taken from republic.show's own stylesheet, not matched by eye.
+ * The venue's site pairs Montserrat (300–900) with Cormorant Garamond, sets
+ * near-black cards on a cream canvas at a 3px radius, and uses one gold for
+ * every call to action.
+ */
 :root {
-  --ink: #f4f1ea;
-  --paper: #000000;
-  --ui-bg: #121214;
-  --ui-panel: #1a1a1e;
-  --ui-line: #2e2e34;
-  --ui-text: #e8e8ea;
-  --ui-muted: #9a9aa2;
-  --ui-accent: #c8a96a;
-  color-scheme: dark;
+  --cream: #faf8f5;
+  --cream-200: #f5f0e8;
+  --cream-300: #e8ddd0;
+  --cream-400: #d4c4b0;
+  --cream-500: #b8a08a;
+
+  --charcoal: #1a1a1a;
+  --charcoal-light: #2a2a2a;
+  --charcoal-950: #0f0f0f;
+  --charcoal-500: #9a9a9a;
+
+  --gold: #c9a227;
+  --gold-light: #e8d5b0;
+  --gold-dark: #996515;
+
+  --ease-luxury: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --font-sans: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
+  /* The site's card radius is 3px and its button radius 2px. Nearly square,
+     which is most of why it does not look like every other template. */
+  --r-card: 3px;
+  --r-btn: 2px;
+
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
 
 html, body, #root { height: 100%; margin: 0; }
 
+@supports (height: 100dvh) {
+  html, body, #root { height: 100dvh; }
+}
+
 body {
-  background: var(--ui-bg);
-  color: var(--ui-text);
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: var(--font-sans);
   font-size: 14px;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
+}
+
+/* The site's overline: wide-tracked uppercase Montserrat, used for every
+   small label. It carries the hierarchy, which is why this stylesheet needs
+   no rules or dividers to separate things. */
+.overline {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--charcoal-500);
 }
 
 /* ---------------------------------------------------------------- shell */
 
 .app {
   display: grid;
-  grid-template-columns: minmax(320px, 400px) 1fr;
+  grid-template-columns: minmax(330px, 410px) 1fr;
   height: 100%;
   overflow: hidden;
 }
 
-/* The tab bar exists only on narrow screens. */
-.tabs { display: none; }
-
-/*
- * On a phone there is no room for the form and the sheet side by side.
- * Stacking them was worse than it sounds: the preview pane ended up as the
- * `1fr` row of an auto-height container, collapsed to a ~56px strip below a
- * long scrolling form, and because its usable height was zero the shrink-to-
- * fit never ran and the sheet stayed at full A4 inside that strip. So the two
- * panes become tabs, and whichever is showing gets the whole viewport.
- */
-@media (max-width: 860px) {
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .tabs {
-    display: flex;
-    border-bottom: 1px solid var(--ui-line);
-    background: var(--ui-panel);
-  }
-
-  .tabs button {
-    flex: 1;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    padding: 12px 8px;
-    color: var(--ui-muted);
-    border-bottom: 2px solid transparent;
-  }
-
-  .tabs button[aria-selected='true'] {
-    color: var(--ui-text);
-    border-bottom-color: var(--ui-accent);
-    font-weight: 600;
-  }
-
-  .app[data-mobile-tab='edit'] .preview { display: none; }
-  .app[data-mobile-tab='preview'] .editor { display: none; }
-
-  .editor { border-right: 0; }
-  .preview { padding: 12px; }
-}
-
-/*
- * Mobile browsers shrink the viewport as their toolbars appear, and a plain
- * 100% height leaves the bottom of the sheet under the toolbar. dvh tracks
- * the space actually visible.
- */
-@supports (height: 100dvh) {
-  html, body, #root { height: 100dvh; }
-}
-
 /* --------------------------------------------------------------- editor */
 
+/*
+ * The two panes are told apart by tone, not by a dividing line: the form sits
+ * on the lighter cream, the stage on the warmer one.
+ */
 .editor {
-  border-right: 1px solid var(--ui-line);
-  background: var(--ui-panel);
+  background: var(--cream);
   overflow-y: auto;
-  padding: 20px;
+  padding: 26px 24px 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
-.editor__brand {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
+.editor__brand { display: flex; flex-direction: column; gap: 4px; }
 
 .editor__brand h1 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 22px;
+  font-family: var(--font-serif);
+  font-size: 40px;
   font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
   margin: 0;
-  letter-spacing: 0.01em;
 }
 
-.editor__brand span { color: var(--ui-muted); font-size: 12px; }
-
-.field { display: flex; flex-direction: column; gap: 5px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
 
 .field > label {
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--ui-muted);
+  color: var(--charcoal-500);
 }
 
-input, textarea, select {
+input, textarea {
   font: inherit;
-  color: var(--ui-text);
-  background: #0e0e11;
-  border: 1px solid var(--ui-line);
-  border-radius: 6px;
-  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--charcoal);
+  background: #fff;
+  border: 1px solid rgba(26, 26, 26, 0.14);
+  border-radius: var(--r-card);
+  padding: 9px 11px;
   width: 100%;
   resize: vertical;
+  transition: border-color 0.2s var(--ease-luxury), box-shadow 0.2s var(--ease-luxury);
 }
 
-input:focus, textarea:focus, select:focus {
-  outline: 2px solid var(--ui-accent);
-  outline-offset: -1px;
-  border-color: var(--ui-accent);
+input::placeholder, textarea::placeholder { color: var(--cream-500); }
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
 }
 
-.row { display: flex; gap: 10px; }
+.row { display: flex; gap: 12px; }
 .row > * { flex: 1; min-width: 0; }
 
+/* The site sets every call to action the same way: uppercase Montserrat at
+   700, tracked out to 0.12em, on a 2px radius. */
 button {
-  font: inherit;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
-  border-radius: 6px;
-  border: 1px solid var(--ui-line);
-  background: #23232a;
-  color: var(--ui-text);
-  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: var(--charcoal);
+  padding: 11px 16px;
+  line-height: 1;
+  transition: background-color 0.3s var(--ease-luxury), color 0.3s var(--ease-luxury),
+    box-shadow 0.3s var(--ease-luxury), transform 0.3s var(--ease-luxury);
 }
 
-button:hover { background: #2c2c35; }
-button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: default; }
 
 .btn--primary {
-  background: var(--ui-accent);
-  border-color: var(--ui-accent);
-  color: #1a1407;
-  font-weight: 600;
+  background: var(--gold);
+  color: var(--charcoal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
 }
 
-.btn--primary:hover { background: #d7bb7e; }
+/* The arrow the venue puts on its RESERVE buttons. */
+.btn--primary::after { content: '→'; font-size: 0.95rem; line-height: 1; }
 
-.btn--ghost { background: transparent; }
-
-.btn--icon {
-  padding: 4px 8px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--ui-muted);
+.btn--primary:hover:not(:disabled) {
+  background: var(--gold-light);
+  box-shadow: 0 12px 24px rgba(201, 162, 39, 0.25);
 }
 
-.seg { display: flex; border: 1px solid var(--ui-line); border-radius: 6px; overflow: hidden; }
-.seg button { border: 0; border-radius: 0; flex: 1; background: transparent; }
-.seg button[aria-pressed='true'] { background: var(--ui-accent); color: #1a1407; font-weight: 600; }
+.btn--outline {
+  border-color: rgba(26, 26, 26, 0.22);
+  color: var(--charcoal);
+}
 
-.divider { height: 1px; background: var(--ui-line); }
+.btn--outline:hover { background: var(--charcoal); color: var(--cream); border-color: var(--charcoal); }
 
-.list { display: flex; flex-direction: column; gap: 12px; }
+.btn--add {
+  border: 1px dashed rgba(26, 26, 26, 0.28);
+  color: var(--charcoal-500);
+  padding: 13px 16px;
+}
 
+.btn--add:hover { border-color: var(--gold); color: var(--gold-dark); border-style: solid; }
+
+/* Orientation toggle, marked with a filled block like the mobile tabs. */
+.seg { display: flex; gap: 6px; }
+
+.seg button {
+  flex: 1;
+  border-color: rgba(26, 26, 26, 0.22);
+  color: var(--charcoal-500);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--charcoal);
+  color: var(--cream);
+  border-color: var(--charcoal);
+}
+
+.list { display: flex; flex-direction: column; gap: 10px; }
+
+/* Each cocktail is a white block on the cream. Blocks, not ruled rows. */
 .item {
-  border: 1px solid var(--ui-line);
-  border-radius: 8px;
-  padding: 12px;
-  background: #15151a;
+  background: #fff;
+  border-radius: var(--r-card);
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
-.item__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.item__head { display: flex; align-items: center; gap: 10px; }
 
 .item__num {
-  font-size: 11px;
-  color: var(--ui-muted);
-  min-width: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
   font-variant-numeric: tabular-nums;
+  min-width: 16px;
 }
 
-.item__head input { flex: 1; }
+.item__head input { flex: 1; font-weight: 600; }
 .item__tools { display: flex; gap: 2px; }
 
-.hint { font-size: 12px; color: var(--ui-muted); line-height: 1.5; margin: 0; }
+.btn--icon {
+  padding: 5px 7px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--charcoal-500);
+  border-radius: var(--r-btn);
+}
+
+.btn--icon:hover:not(:disabled) { background: var(--cream-200); color: var(--charcoal); }
+
+.hint {
+  font-size: 11px;
+  color: var(--charcoal-500);
+  line-height: 1.6;
+  margin: 0;
+}
 
 .warn {
   font-size: 12px;
   line-height: 1.5;
-  background: #3a2a0c;
-  border: 1px solid #6b4e12;
-  color: #f0d79a;
-  border-radius: 6px;
-  padding: 8px 10px;
+  background: rgba(201, 162, 39, 0.14);
+  color: var(--gold-dark);
+  border-radius: var(--r-card);
+  padding: 10px 12px;
   margin: 0;
+  font-weight: 500;
+}
+
+/*
+ * Pinned to the foot of the form. Exporting is the point of the app and it
+ * should not be a scroll away behind thirty cocktails. The cream background
+ * carries the separation; there is no rule across the top.
+ */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  bottom: 0;
+  background: var(--cream);
+  padding: 14px 0 22px;
+  margin-top: auto;
+}
+
+/* A short fade so content scrolling under the pinned controls dissolves
+   rather than meeting a hard edge. */
+.actions::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18px;
+  height: 18px;
+  background: linear-gradient(to bottom, rgba(250, 248, 245, 0), var(--cream));
+  pointer-events: none;
 }
 
 /* -------------------------------------------------------------- preview */
 
 .preview {
-  background: #08080a;
+  background: var(--cream-200);
   overflow: auto;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 28px;
+  padding: 32px;
 }
 
 /*
@@ -248,59 +306,50 @@ button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px;
  * .page is the physical sheet. Its dimensions are in millimetres so that the
  * thing on screen and the thing that comes out of the printer are the same
  * object, scaled. Nothing here depends on the viewport.
+ *
+ * Charcoal rather than pure black, which is the colour the venue sets its own
+ * cards in.
  */
 .page {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--charcoal);
+  color: var(--cream);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Keep the black background when printing instead of letting the browser
+  /* Keep the dark background when printing instead of letting the browser
      helpfully drop it to save ink. */
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
-.preview .page { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7); }
+.preview .page { box-shadow: 0 20px 45px rgba(26, 26, 26, 0.18); }
 
 .page__header {
   text-align: center;
   flex: 0 0 auto;
-  padding-bottom: 6mm;
+  padding-bottom: 7mm;
 }
 
 .page__title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 700;
-  font-size: 9mm;
-  line-height: 1.1;
+  font-size: 13mm;
+  line-height: 1;
   margin: 0;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.005em;
 }
 
+/* The venue's overline treatment, in its gold. */
 .page__subtitle {
-  font-size: 3.4mm;
-  letter-spacing: 0.34em;
+  font-family: var(--font-sans);
+  font-size: 3mm;
+  font-weight: 600;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgba(244, 241, 234, 0.62);
-  margin: 2.5mm 0 0;
-  font-weight: 300;
+  color: var(--gold);
+  margin: 3mm 0 0;
 }
 
-.page__rule {
-  width: 18mm;
-  height: 0.4mm;
-  background: var(--ink);
-  opacity: 0.5;
-  margin: 4mm auto 0;
-}
-
-/*
- * The grid is flexbox rather than CSS Grid for one reason: when the last row
- * is only partly filled, `justify-content: center` centres those leftover
- * items. CSS Grid would leave them hugging the left edge, which reads as a
- * mistake on a printed menu.
- */
 .page__grid {
   flex: 1 1 auto;
   display: flex;
@@ -333,38 +382,83 @@ button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px;
 .page__grid--stacked .cell { justify-content: flex-start; }
 
 .cell__name {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 700;
   font-size: var(--fs);
-  line-height: 1.08;
+  line-height: 1.02;
   margin: 0;
   overflow-wrap: break-word;
   hyphens: auto;
   text-wrap: balance;
 }
 
-.cell__ing {
-  font-size: calc(var(--fs) * var(--sub) * 0.92);
-  line-height: 1.35;
-  margin: calc(var(--fs) * 0.26) 0 0;
-  color: rgba(244, 241, 234, 0.95);
-  font-weight: 400;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-}
-
+/* Italic Cormorant, the same treatment the venue gives its taglines. */
 .cell__desc {
-  font-size: calc(var(--fs) * var(--sub) * 0.86);
-  line-height: 1.4;
-  margin: calc(var(--fs) * 0.18) 0 0;
-  color: rgba(244, 241, 234, 0.66);
-  font-weight: 300;
+  font-family: var(--font-serif);
   font-style: italic;
+  font-weight: 500;
+  font-size: calc(var(--fs) * var(--sub) * 1.02);
+  line-height: 1.25;
+  margin: calc(var(--fs) * 0.16) 0 0;
+  color: rgba(250, 248, 245, 0.72);
   text-wrap: balance;
   overflow-wrap: break-word;
 }
 
-.cell--empty { opacity: 0.25; }
+/* The functional line, so it takes the sans. */
+.cell__ing {
+  font-family: var(--font-sans);
+  font-size: calc(var(--fs) * var(--sub) * 0.66);
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 1.45;
+  margin: calc(var(--fs) * 0.2) 0 0;
+  color: rgba(250, 248, 245, 0.93);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.cell--empty { opacity: 0.3; }
+
+/* --------------------------------------------------------------- mobile */
+
+.tabs { display: none; }
+
+/*
+ * On a phone there is no room for the form and the sheet side by side.
+ * Stacking them was worse than it sounds: the preview pane ended up as the
+ * `1fr` row of an auto-height container, collapsed to a ~56px strip below a
+ * long scrolling form, and because its usable height was zero the shrink-to-
+ * fit never ran and the sheet stayed at full A4 inside that strip. So the two
+ * panes become tabs, and whichever is showing gets the whole viewport.
+ */
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .tabs { display: flex; background: var(--cream-200); padding: 6px; gap: 6px; }
+
+  /* The selected tab is a solid charcoal block rather than an underline —
+     the venue marks state with filled shapes, not rules. */
+  .tabs button {
+    flex: 1;
+    padding: 12px 8px;
+    color: var(--charcoal-500);
+    border-radius: var(--r-btn);
+  }
+
+  .tabs button[aria-selected='true'] { background: var(--charcoal); color: var(--cream); }
+
+  .app[data-mobile-tab='edit'] .preview { display: none; }
+  .app[data-mobile-tab='preview'] .editor { display: none; }
+
+  .preview { padding: 14px; }
+  .editor { padding: 20px 16px 0; }
+}
 
 /* ---------------------------------------------------------------- print */
 

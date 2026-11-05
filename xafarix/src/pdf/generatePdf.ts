@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
-import { inter300Italic, inter400, playfairDisplay700 } from './fonts'
+import { loadFaces } from './loadFonts'
+import type { LoadedFace } from './loadFonts'
 import { snapshotPage, withNaturalScale } from './measure'
 import type { PageSnapshot } from './measure'
 
@@ -12,8 +13,8 @@ const px2mm = (px: number) => px / PX_PER_MM
 
 /**
  * The code points the embedded subsets cover. Must match the `--unicodes`
- * argument used to build fonts.ts: Latin, Latin-1 Supplement, Latin
- * Extended-A, and the punctuation menus use.
+ * argument recorded in public/fonts/README.md: Latin, Latin-1 Supplement,
+ * Latin Extended-A, and the punctuation menus use.
  */
 const COVERED: ReadonlyArray<readonly [number, number]> = [
   [0x20, 0x7e],
@@ -48,20 +49,29 @@ export function uncoveredCharacters(text: string): string[] {
   return [...missing]
 }
 
-function registerFonts(doc: jsPDF): void {
-  doc.addFileToVFS('PlayfairDisplay-Bold.ttf', playfairDisplay700)
-  doc.addFont('PlayfairDisplay-Bold.ttf', 'PlayfairDisplay', 'bold')
-  doc.addFileToVFS('Inter-Regular.ttf', inter400)
-  doc.addFont('Inter-Regular.ttf', 'Inter', 'normal')
-  doc.addFileToVFS('Inter-LightItalic.ttf', inter300Italic)
-  doc.addFont('Inter-LightItalic.ttf', 'Inter', 'italic')
+function registerFonts(doc: jsPDF, faces: LoadedFace[]): void {
+  for (const face of faces) {
+    doc.addFileToVFS(face.vfsName, face.data)
+    doc.addFont(face.vfsName, face.family, face.style)
+  }
 }
 
-/** Maps a computed font-family/style onto one of the three embedded faces. */
-function faceFor(fontFamily: string, fontStyle: string): [string, string] {
-  if (/playfair/i.test(fontFamily)) return ['PlayfairDisplay', 'bold']
-  if (fontStyle === 'italic' || fontStyle === 'oblique') return ['Inter', 'italic']
-  return ['Inter', 'normal']
+/**
+ * Maps a computed font-family/style/weight onto one of the four embedded
+ * faces: Cormorant Garamond bold and medium italic, Montserrat regular and
+ * semibold. Anything the stylesheet sets must land on one of them, so the
+ * fallbacks here follow the sheet's own usage rather than guessing.
+ */
+function faceFor(
+  fontFamily: string,
+  fontStyle: string,
+  fontWeight: number,
+): [string, string] {
+  const italic = fontStyle === 'italic' || fontStyle === 'oblique'
+  if (/cormorant/i.test(fontFamily)) {
+    return ['CormorantGaramond', italic ? 'italic' : 'bold']
+  }
+  return ['Montserrat', fontWeight >= 600 ? 'bold' : 'normal']
 }
 
 function draw(doc: jsPDF, snap: PageSnapshot): void {
@@ -75,7 +85,7 @@ function draw(doc: jsPDF, snap: PageSnapshot): void {
   }
 
   for (const line of snap.lines) {
-    const [family, style] = faceFor(line.fontFamily, line.fontStyle)
+    const [family, style] = faceFor(line.fontFamily, line.fontStyle, line.fontWeight)
     doc.setFont(family, style)
     doc.setFontSize(line.fontSizePx * PT_PER_PX)
     doc.setTextColor(line.color[0], line.color[1], line.color[2])
@@ -99,11 +109,15 @@ export interface PdfResult {
  * produces a file the caller can hand straight to the user, which is the only
  * thing that works on a phone.
  */
-export function generatePdf(
+export async function generatePdf(
   page: HTMLElement,
   stage: HTMLElement | null,
   menuTitle: string,
-): PdfResult {
+): Promise<PdfResult> {
+  // Fetched before measuring so the (synchronous) snapshot and draw happen
+  // back to back with no await between them.
+  const faces = await loadFaces()
+
   const snap = withNaturalScale(stage, () => snapshotPage(page))
 
   const landscape = snap.widthPx > snap.heightPx
@@ -114,7 +128,7 @@ export function generatePdf(
     compress: true,
   })
 
-  registerFonts(doc)
+  registerFonts(doc, faces)
   draw(doc, snap)
 
   const safe = menuTitle.trim().replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-')
