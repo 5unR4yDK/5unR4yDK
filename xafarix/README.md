@@ -47,13 +47,41 @@ page the description sits at 28% of a very large name; as the menu gets denser
 that ratio climbs toward parity, because 28% of an already-small name would be
 unreadable.
 
+## Design
+
+The colours and type are not an interpretation of the venue's site; they are
+its own tokens, read out of `republic.show`'s stylesheet:
+
+| token | value | used for |
+| --- | --- | --- |
+| `--cream` | `#faf8f5` | the canvas the editor sits on |
+| `--cream-200` | `#f5f0e8` | the stage behind the sheet |
+| `--charcoal` | `#1a1a1a` | the sheet itself, and filled controls |
+| `--charcoal-500` | `#9a9a9a` | secondary text |
+| `--gold` | `#c9a227` | every call to action, and the menu's overline |
+| `--gold-light` | `#e8d5b0` | the gold hover state |
+| `--gold-dark` | `#996515` | warnings |
+
+The venue pairs **Montserrat** (300-900) with **Cormorant Garamond**, so the
+menu sets cocktail names in Cormorant 700, descriptions in its medium italic -
+the treatment the site gives its taglines - and the ingredient line in
+Montserrat, since that line is information rather than voice. Cards use the
+site's 3px radius and buttons its 2px, with calls to action in uppercase
+Montserrat tracked to 0.12em and carrying the same arrow as its RESERVE
+buttons.
+
+Hierarchy is carried by weight, tone and space. There are no rules, dividers
+or accent bars anywhere in the stylesheet: panes are told apart by their cream
+tone, selected states by a filled charcoal block, and the pinned export bar by
+a short gradient rather than a line.
+
 ## Getting the PDF out
 
 **Download PDF** builds a real file and hands it to the browser. This is the
 primary export because the print dialog is not a usable answer on a phone:
 there it produces a print job, or on an in-app browser nothing at all.
 
-The file is vector text in the same three faces as the preview, typically
+The file is vector text in the same four faces as the preview, typically
 10–25KB, drawn from the geometry the browser actually produced rather than
 from a second layout pass — see `src/pdf/measure.ts`. Every line of text is
 measured where it landed, so the PDF inherits the wrapping, the balanced
