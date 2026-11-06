@@ -1,4 +1,6 @@
 import type { Cocktail } from '../types'
+import { isCustom } from '../types'
+import CustomMark from './CustomMark'
 
 interface Props {
   cocktail: Cocktail | null
@@ -7,6 +9,9 @@ interface Props {
   onChange: (patch: Partial<Cocktail>) => void
   onMove: (delta: number) => void
   onRemove: () => void
+  /** Whether this drink is already in the shortlist. */
+  nominated: boolean
+  onNominate: () => void
 }
 
 /**
@@ -23,6 +28,8 @@ export default function Inspector({
   onChange,
   onMove,
   onRemove,
+  nominated,
+  onNominate,
 }: Props) {
   if (!cocktail) {
     return (
@@ -38,8 +45,9 @@ export default function Inspector({
   return (
     <div className="inspector">
       <div className="inspector__head">
-        <span className="field__label">
+        <span className="field__label inspector__label">
           Editing {index + 1} of {total}
+          {isCustom(cocktail) && <CustomMark />}
         </span>
         <div className="item__tools">
           <button
@@ -105,6 +113,15 @@ export default function Inspector({
           onChange={(e) => onChange({ description: e.target.value })}
         />
       </div>
+
+      <button
+        type="button"
+        className="btn--outline inspector__nominate"
+        onClick={onNominate}
+        disabled={nominated}
+      >
+        {nominated ? '★ In your nominees' : '★ Nominate this version'}
+      </button>
     </div>
   )
 }

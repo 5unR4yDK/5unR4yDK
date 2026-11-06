@@ -69,3 +69,14 @@ export function shareUrl(menu: Menu): string {
   const { origin, pathname } = window.location
   return `${origin}${pathname}#m=${encodeToHash(menu)}`
 }
+
+/** Drops a shared menu from the address bar once it has been read. */
+export function clearHash(): void {
+  try {
+    if (window.location.hash.startsWith('#m=')) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  } catch {
+    /* not fatal */
+  }
+}

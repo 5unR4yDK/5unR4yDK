@@ -16,10 +16,51 @@ npm run dev      # http://localhost:5173
 npm run build    # static output in dist/
 ```
 
-There is no backend, no account and no database. A menu is saved in the
-browser's `localStorage`, and the "copy shareable link" button encodes the
-entire menu into the URL fragment, so a link carries the menu with it and no
-data is stored on a server. That is also why the app costs nothing to run.
+The "Share link" button still encodes the entire menu into the URL fragment,
+so a link carries a menu with it independently of any storage. Saved menus
+and the shortlist are covered under *Storage* below; both run on free tiers.
+
+## Users, menus and the shortlist
+
+**A name, not an account.** The first visit asks for a name and nothing else.
+Everything is kept under it, matched without regard to case or spacing, so
+"Francesco" on a phone and "francesco" on a laptop are the same person. There
+is no password: anyone who types the same name opens the same menus. That is
+deliberate for a private experiment, and the sign-in screen says so plainly.
+
+**Starter menus.** Small (4 cocktails), Medium (10) and Large (28) are always
+available, and a new user opens on Small. Opening one gives a working copy;
+saving it makes it the user's own, and from then on it saves itself.
+Switching away from an edited starter asks first, since that is the only case
+where work could be lost. **New** opens a blank menu; **Clear** empties the one
+on screen, after asking.
+
+**Nominees.** A shortlist kept beside the menu without changing it. Every
+search result has two one-tap buttons — ★ to nominate, + to put straight on
+the menu — and tapping the result itself opens it for editing first. Each
+nominee row carries a single button that both adds it to the menu and takes
+it off again. Anything changed from the recipe it came from, or written from
+scratch, carries a small pen mark.
+
+On a phone the three areas are tabs — Menu, Nominees, Preview — and editing
+happens in a sheet that rises from the bottom, where the thumb already is.
+
+### Storage
+
+Synced through two small serverless functions, `api/menus.js` and
+`api/nominees.js`, onto Vercel Blob: one JSON document per menu and one per
+shortlist, written in place and read past the CDN cache, so a save on one
+device is what another reads a second later.
+
+Until a Blob store is connected to the project, the functions answer `503`
+and the app keeps everything on each device instead — it works either way,
+and says which ("synced" or "on this device") beside the user's name. When
+sync is switched on, menus that so far existed only on a device are uploaded
+rather than left behind.
+
+To switch sync on: Vercel → the `xafarix` project → **Storage** → **Create** →
+**Blob** (private), connected to this project, then redeploy. The store's
+token arrives as `BLOB_READ_WRITE_TOKEN`; nothing in the code changes.
 
 ## The console
 
@@ -53,13 +94,6 @@ added under whatever was typed.
 Chips are also what makes categories tractable later: they become headed
 groups, and a cocktail moves between groups by dragging a chip. A column of
 forms could never do that cleanly.
-
-## Saving
-
-Menus are saved by name on the browser, listed under "Saved menus", and
-reopened or deleted from there. Saving the same name twice replaces rather
-than quietly duplicating. Still no account and no server — the share link
-remains the way to move a menu to another device.
 
 ## How the layout works
 

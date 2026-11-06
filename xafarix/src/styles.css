@@ -33,7 +33,12 @@
   color-scheme: light;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* iOS's grey tap flash is turned off above and replaced with this, which
+   matches the palette and does not linger on the element underneath when a
+   sheet opens over it. */
+button:active:not(:disabled) { opacity: 0.82; }
 
 html, body, #root { height: 100%; margin: 0; }
 
@@ -291,8 +296,13 @@ button:disabled { opacity: 0.45; cursor: default; }
   overflow: auto;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  /* Centred by the stage's auto margins, not justify-content. Flex centring
+     pushes an overflowing child past the left edge where it cannot be
+     scrolled to; auto margins centre when there is room and collapse to zero
+     when there is not, which is what "Actual size" needs. */
+  justify-content: flex-start;
   padding: 32px;
+  -webkit-overflow-scrolling: touch;
 }
 
 /*
@@ -301,7 +311,28 @@ button:disabled { opacity: 0.45; cursor: default; }
  * content land exactly inside it. Any other origin shifts the sheet sideways
  * out of its own box.
  */
-.preview__stage { transform-origin: top left; }
+.preview__stage { transform-origin: top left; margin: 0 auto; flex: none; }
+
+/*
+ * Fit page / Actual size. Fixed to the bottom-right corner of the viewport,
+ * which is over the preview in both layouts: the right-hand column on a
+ * desktop, the whole screen below the tabs on a phone. On the Edit tab the
+ * preview is display:none and takes this with it.
+ */
+.zoom-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  /* Cream, not charcoal: at actual size the button sits over the dark sheet,
+     where a charcoal one disappears. */
+  background: var(--cream);
+  color: var(--charcoal);
+  padding: 11px 14px;
+  box-shadow: 0 10px 28px rgba(26, 26, 26, 0.35);
+}
+
+.zoom-toggle:hover { background: #fff; }
 
 /* ------------------------------------------------------------ the sheet */
 
@@ -487,8 +518,18 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
 .search__hit {
   display: flex;
   align-items: center;
+  gap: 4px;
+  border-radius: var(--r-btn);
+}
+
+.search__hit:hover { background: var(--cream-200); }
+
+.search__hit-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
   gap: 10px;
-  width: 100%;
   padding: 7px;
   text-align: left;
   text-transform: none;
@@ -498,7 +539,26 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
   border-radius: var(--r-btn);
 }
 
-.search__hit:hover { background: var(--cream-200); }
+/*
+ * The one-tap shortcuts on every result: shortlist, or straight onto the
+ * menu. 44px square, the smallest target a thumb hits reliably.
+ */
+.quick {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 17px;
+  letter-spacing: 0;
+  border-radius: var(--r-btn);
+  background: var(--cream-200);
+  color: var(--charcoal);
+}
+
+.quick:hover:not(:disabled) { background: var(--charcoal); color: var(--cream); }
+.quick--add { background: var(--gold); color: var(--charcoal); font-size: 20px; }
+.quick--add:hover:not(:disabled) { background: var(--gold-light); color: var(--charcoal); }
+.quick:disabled { opacity: 1; background: transparent; color: var(--gold-dark); cursor: default; }
 
 .search__hit img,
 .search__hit-noimg {
@@ -594,80 +654,7 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
 .inspector--empty { background: transparent; padding: 4px 0; }
 .inspector__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
-/* --------------------------------------------------------------- library */
-
-.library { display: flex; flex-direction: column; gap: 8px; }
-
-.library__toggle {
-  align-self: flex-start;
-  padding: 0;
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  color: var(--charcoal-500);
-}
-
-.library__toggle:hover { color: var(--charcoal); }
-
-.library__body { display: flex; flex-direction: column; gap: 8px; }
-.library__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.library__list li { display: flex; align-items: center; gap: 4px; }
-
-.library__open {
-  flex: 1;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 11px;
-  background: #fff;
-  border-radius: var(--r-btn);
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: left;
-}
-
-.library__open:hover { background: var(--cream-300); }
-.library__meta { font-size: 10px; font-weight: 400; color: var(--charcoal-500); white-space: nowrap; }
-
-/* ----------------------------------------------------------------- modal */
-
-.modal__scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(26, 26, 26, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.modal {
-  background: var(--cream);
-  border-radius: var(--r-card);
-  width: min(560px, 100%);
-  max-height: min(86vh, 760px);
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 30px 70px rgba(26, 26, 26, 0.4);
-}
-
-.modal__head { display: flex; align-items: flex-start; gap: 14px; }
-.modal__thumb { width: 84px; height: 84px; object-fit: cover; border-radius: var(--r-card); flex: 0 0 auto; }
-.modal__close { margin-left: auto; }
-
-.modal__title {
-  font-family: var(--font-serif);
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1;
-  margin: 0 0 8px;
-}
+/* ---------------------------------------------------------- badges, pours */
 
 .badges { display: flex; flex-wrap: wrap; gap: 5px; }
 
@@ -682,9 +669,6 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
   border-radius: var(--r-btn);
 }
 
-.modal__body { display: flex; flex-direction: column; gap: 16px; }
-.modal__body section { display: flex; flex-direction: column; gap: 8px; }
-
 .pours { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 
 .pours li {
@@ -696,19 +680,319 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
   padding: 7px 10px;
 }
 
-.pours__measure {
-  flex: 0 0 92px;
-  color: var(--charcoal-500);
-  font-variant-numeric: tabular-nums;
-}
-
+.pours__measure { flex: 0 0 92px; color: var(--charcoal-500); font-variant-numeric: tabular-nums; }
 .pours__name { font-weight: 600; }
 
-.modal__instructions { margin: 0; font-size: 13px; line-height: 1.6; }
-.modal__asline { font-style: italic; }
-.modal__foot { display: flex; flex-wrap: wrap; gap: 8px; }
-.modal__foot > button { flex: 1 1 auto; }
-.modal__note { text-align: center; }
+/* ------------------------------------------------------------ custom mark */
+
+/* The pen beside anything the user has made their own. Gold, like every
+   other mark of the user's hand in this interface. */
+.custom-mark { color: var(--gold); flex: 0 0 auto; vertical-align: -1px; margin-left: 5px; }
+
+/* ------------------------------------------------------------------ gate */
+
+.gate {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--cream-200);
+}
+
+.gate__card {
+  width: min(400px, 100%);
+  background: var(--cream);
+  border-radius: var(--r-card);
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 20px 45px rgba(26, 26, 26, 0.12);
+}
+
+.gate__brand {
+  font-family: var(--font-serif);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 0.9;
+  margin: 0;
+}
+
+.gate__label { margin-top: 18px; }
+.gate__card input { font-size: 17px; padding: 12px; }
+.gate__card .btn--primary { padding: 15px 16px; font-size: 12px; }
+.gate__note { margin-top: 4px; }
+
+/* ----------------------------------------------------------------- user */
+
+.editor__user {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.editor__sync { font-weight: 400; color: var(--charcoal-500); }
+
+.editor__switch {
+  padding: 0;
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--charcoal-500);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: 0.08em;
+}
+
+.editor__switch:hover { color: var(--charcoal); }
+
+/* Desktop's Menu / Nominees switch. A phone gets the tab bar instead. */
+.views { display: flex; gap: 6px; }
+.views button { flex: 1; color: var(--charcoal-500); border: 1px solid rgba(26, 26, 26, 0.18); }
+.views button[aria-selected='true'] { background: var(--charcoal); color: var(--cream); border-color: var(--charcoal); }
+
+/* ---------------------------------------------------------------- menus */
+
+.menus { display: flex; flex-direction: column; gap: 10px; }
+
+/*
+ * Starters and saved menus in one row that scrolls sideways. It never grows
+ * downwards however many menus pile up, and a swipe through it is how a
+ * phone expects to browse a short set.
+ */
+.menus__strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin: 0 -24px;
+  padding-left: 24px;
+  padding-right: 24px;
+  scroll-snap-type: x proximity;
+  /* Snapping aligns chips to the scroll edge and ignores padding, which left
+     the first chip flush against the screen; this gives snapping the same
+     inset as the rest of the column. */
+  scroll-padding-inline: 24px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.menus__strip::-webkit-scrollbar { display: none; }
+
+.menus__chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 92px;
+  max-width: 170px;
+  padding: 9px 12px 10px;
+  background: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  border-radius: var(--r-card);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menus__chip:hover { background: var(--cream-300); }
+
+.menus__chip-kind {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--charcoal-500);
+}
+
+.menus__chip-count { font-size: 10px; font-weight: 400; color: var(--charcoal-500); }
+
+.menus__chip[aria-pressed='true'] { background: var(--charcoal); color: var(--cream); }
+.menus__chip[aria-pressed='true'] .menus__chip-kind { color: var(--gold); }
+.menus__chip[aria-pressed='true'] .menus__chip-count { color: var(--cream-400); }
+
+.menus__chip--new {
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  border: 1px dashed rgba(26, 26, 26, 0.3);
+  color: var(--charcoal-500);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.menus__chip--new:hover { border-style: solid; border-color: var(--gold); color: var(--gold-dark); background: transparent; }
+
+.menus__current { display: flex; flex-direction: column; gap: 3px; }
+
+.menus__title,
+.menus__name {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.menus__name {
+  padding: 2px 6px;
+  margin-left: -7px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.menus__name:hover { border-color: rgba(26, 26, 26, 0.14); }
+.menus__status { font-size: 11px; color: var(--charcoal-500); }
+.menus__status--error { color: var(--gold-dark); font-weight: 600; }
+.menus__actions { display: flex; gap: 6px; }
+.menus__actions > button { flex: 1; }
+.menus__naming > input { flex: 2; }
+.menus__naming > button { flex: 0 0 auto; }
+
+/* ------------------------------------------------------------- nominees */
+
+.nominees { display: flex; flex-direction: column; gap: 10px; }
+.nominees__head { display: flex; flex-direction: column; gap: 3px; }
+.nominees__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.nominee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border-radius: var(--r-card);
+  padding: 6px;
+}
+
+.nominee__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.nominee__body img,
+.nominee__mono {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-btn);
+  flex: 0 0 auto;
+  object-fit: cover;
+}
+
+.nominee__mono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--charcoal);
+  color: var(--cream);
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.nominee__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nominee__name { font-weight: 600; display: flex; align-items: center; }
+
+.nominee__ing {
+  font-size: 11px;
+  color: var(--charcoal-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* One button that both adds and removes: the whole interaction is one tap. */
+.nominee__toggle {
+  flex: 0 0 auto;
+  min-width: 96px;
+  min-height: 44px;
+  background: var(--gold);
+  color: var(--charcoal);
+  padding: 0 12px;
+}
+
+.nominee__toggle:hover { background: var(--gold-light); }
+.nominee__toggle--on { background: var(--charcoal); color: var(--cream); }
+.nominee__toggle--on:hover { background: var(--charcoal-light); }
+
+/* ---------------------------------------------------------------- sheet */
+
+.sheet__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(26, 26, 26, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.sheet {
+  background: var(--cream);
+  border-radius: var(--r-card);
+  width: min(540px, 100%);
+  max-height: min(88vh, 780px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 70px rgba(26, 26, 26, 0.4);
+  overflow: hidden;
+}
+
+.sheet__grip { display: none; }
+.sheet__head { display: flex; align-items: flex-start; gap: 12px; padding: 18px 18px 6px; }
+.sheet__thumb { width: 64px; height: 64px; object-fit: cover; border-radius: var(--r-card); flex: 0 0 auto; }
+.sheet__headtext { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-top: 3px; }
+.sheet__custom { margin-left: 10px; color: var(--gold-dark); letter-spacing: 0.14em; }
+.sheet__custom .custom-mark { margin: 0 3px 0 0; }
+.sheet__close { margin-left: auto; }
+.sheet__body { padding: 8px 18px 4px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.sheet__recipe { display: flex; flex-direction: column; gap: 8px; }
+
+.sheet__recipe-toggle {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--charcoal-500);
+}
+
+.sheet__method { margin: 0; font-size: 13px; line-height: 1.6; }
+
+.sheet__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 18px 18px;
+}
+
+.sheet__foot > .btn--primary,
+.sheet__foot > .btn--outline { flex: 1 1 140px; padding: 14px 12px; }
+.sheet__foot > .btn--quiet { flex: 1 1 100%; }
+
+.btn--quiet { color: var(--charcoal-500); padding: 8px; font-size: 10px; }
+.btn--quiet:hover { color: var(--charcoal); }
+
+.inspector__label { display: flex; align-items: center; }
+.inspector__nominate { padding: 12px; }
 
 /* --------------------------------------------------------------- mobile */
 
@@ -732,6 +1016,32 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
 
   .tabs { display: flex; background: var(--cream-200); padding: 6px; gap: 6px; }
 
+  /* The tab bar replaces the desktop Menu / Nominees switch on a phone. */
+  .views { display: none; }
+
+  .menus__strip { margin: 0 -16px; padding-left: 16px; padding-right: 16px; scroll-padding-inline: 16px; }
+
+  /* A bottom sheet: it rises from where the thumb already is, and its
+     buttons land within reach. */
+  .sheet__scrim { align-items: flex-end; padding: 0; }
+
+  .sheet {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .sheet__grip {
+    display: block;
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--cream-400);
+    margin: 9px auto 0;
+  }
+
+  .sheet__foot { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+
   /* The selected tab is a solid charcoal block rather than an underline —
      the venue marks state with filled shapes, not rules. */
   .tabs button {
@@ -743,7 +1053,22 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
 
   .tabs button[aria-selected='true'] { background: var(--charcoal); color: var(--cream); }
 
-  .app[data-mobile-tab='edit'] .preview { display: none; }
+  /*
+   * Hidden while editing, but kept laid out rather than display:none, just
+   * moved off screen. A display:none sheet has no size, so the type search
+   * cannot run, the legibility warning can never fire, and the sheet's fonts
+   * are never requested. Laid out off screen, the sheet stays measured and
+   * current, and the Preview tab shows it instantly.
+   */
+  .app[data-mobile-tab='edit'] .preview {
+    position: fixed;
+    left: -200vw;
+    top: 0;
+    width: 100vw;
+    height: 100dvh;
+    visibility: hidden;
+    pointer-events: none;
+  }
   .app[data-mobile-tab='preview'] .editor { display: none; }
 
   .preview { padding: 14px; }
@@ -755,7 +1080,7 @@ input[type='search']::-webkit-search-cancel-button:hover { background: var(--cha
 @media print {
   html, body, #root { height: auto; overflow: visible; background: #fff; }
   .app { display: block; height: auto; overflow: visible; }
-  .editor, .tabs { display: none !important; }
+  .editor, .tabs, .zoom-toggle, .sheet__scrim { display: none !important; }
   .preview {
     display: block;
     padding: 0;

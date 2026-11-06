@@ -4,6 +4,7 @@ import type { Menu } from '../types'
 import { chooseGrid } from '../layout'
 import { pageBox } from '../paper'
 import { fitPage } from '../fit'
+import { loadSheetFonts } from '../sheetFonts'
 
 /** 1 CSS px at the 96dpi print reference is 0.75pt. */
 const PT_PER_PX = 0.75
@@ -118,15 +119,23 @@ export default function MenuPage({
   }, [signature, gap, runFit])
 
   // fitty's readme makes the point that any measurement taken before the web
-  // font loads is wrong, so the search is repeated once the font is in.
+  // font loads is wrong. document.fonts.ready alone is not enough: it settles
+  // as soon as nothing is *pending*, and a face that has never been requested
+  // is not pending. So the sheet's faces are asked for explicitly, and the
+  // search re-runs whenever any face finishes loading.
   useEffect(() => {
     if (!('fonts' in document)) return
     let cancelled = false
-    document.fonts.ready.then(() => {
+    loadSheetFonts().then(() => {
       if (!cancelled) runFit()
     })
+    const onLoaded = () => {
+      if (!cancelled) runFit()
+    }
+    document.fonts.addEventListener('loadingdone', onLoaded)
     return () => {
       cancelled = true
+      document.fonts.removeEventListener('loadingdone', onLoaded)
     }
   }, [signature, runFit])
 
