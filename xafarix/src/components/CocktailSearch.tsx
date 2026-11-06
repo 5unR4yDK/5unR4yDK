@@ -6,22 +6,34 @@ import type { Drink } from '../cocktaildb'
 const DEBOUNCE_MS = 350
 
 interface Props {
-  /** Names already on the menu, lower-cased, so results can be marked. */
-  existingNames: ReadonlySet<string>
-  /** Opens the detail sheet for a result. */
-  onInspect: (drink: Drink) => void
-  /** Adds a blank entry under the typed name, for drinks not in the database. */
-  onAddManual: (name: string) => void
+  /** Lower-cased names already on the menu / in the shortlist. */
+  menuNames: ReadonlySet<string>
+  nomineeNames: ReadonlySet<string>
+  /** Tap on the result itself: open it to calibrate before doing anything. */
+  onOpen: (drink: Drink) => void
+  /** One-tap shortcuts that skip the sheet. */
+  onQuickAdd: (drink: Drink) => void
+  onQuickNominate: (drink: Drink) => void
+  /** For a drink the database does not have: start one from the typed name. */
+  onCreateOwn: (name: string) => void
 }
 
 /**
  * Name search against TheCocktailDB.
  *
- * The results list is deliberately a transient dropdown rather than a panel:
- * the console already shows the menu's own cocktails, and a second permanent
- * list of candidates is the thing that makes these tools feel endless.
+ * Every result offers the two common moves as single taps — ★ to shortlist,
+ * + to put straight on the menu — and the row itself opens the recipe for
+ * editing first. The dropdown stays open after a quick tap so several
+ * variations can be picked from one search.
  */
-export default function CocktailSearch({ existingNames, onInspect, onAddManual }: Props) {
+export default function CocktailSearch({
+  menuNames,
+  nomineeNames,
+  onOpen,
+  onQuickAdd,
+  onQuickNominate,
+  onCreateOwn,
+}: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Drink[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -73,46 +85,47 @@ export default function CocktailSearch({ existingNames, onInspect, onAddManual }
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
-  // Dismiss on an outside click so the dropdown never traps the console.
+  // Dismiss on an outside tap so the dropdown never traps the console.
   useEffect(() => {
     if (!open) return
-    const onDown = (e: MouseEvent) => {
+    const onDown = (e: PointerEvent) => {
       if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
   }, [open])
 
-  const addManual = useCallback(() => {
+  const createOwn = useCallback(() => {
     const name = query.trim()
     if (name === '') return
-    onAddManual(name)
-    setQuery('')
+    onCreateOwn(name)
     setOpen(false)
-  }, [query, onAddManual])
+  }, [query, onCreateOwn])
 
   const trimmed = query.trim()
+  const key = (d: Drink) => d.name.trim().toLowerCase()
 
   return (
     <div className="search" ref={boxRef}>
       <label className="field__label" htmlFor="cocktail-search">
-        Add a cocktail
+        Find a cocktail
       </label>
       <input
         id="cocktail-search"
         type="search"
         value={query}
-        placeholder="Search by name — Negroni, Daiquiri…"
+        placeholder="Negroni, daiquiri, mule…"
         autoComplete="off"
+        enterKeyHint="search"
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => trimmed !== '' && setOpen(true)}
         onKeyDown={(e) => {
           if (e.key === 'Escape') setOpen(false)
-          // Enter adds by hand when nothing matched, which is the fast path
-          // for a house drink that will never be in the database.
+          // Enter starts a drink of your own when nothing matched — the fast
+          // path for a house drink the database will never have.
           if (e.key === 'Enter' && !isLoading && results.length === 0) {
             e.preventDefault()
-            addManual()
+            createOwn()
           }
         }}
       />
@@ -127,43 +140,53 @@ export default function CocktailSearch({ existingNames, onInspect, onAddManual }
 
           {!isLoading &&
             !error &&
-            results.map((drink) => (
-              <button
-                type="button"
-                role="option"
-                aria-selected={false}
-                className="search__hit"
-                key={drink.id}
-                onClick={() => {
-                  onInspect(drink)
-                  setOpen(false)
-                }}
-              >
-                {drink.thumb ? (
-                  <img src={`${drink.thumb}/preview`} alt="" loading="lazy" />
-                ) : (
-                  <span className="search__hit-noimg" aria-hidden="true" />
-                )}
-                <span className="search__hit-text">
-                  <span className="search__hit-name">
-                    {drink.name}
-                    {/* Marked, not blocked: two takes on one drink can be
-                        deliberate, but adding it twice by accident is the
-                        common case. */}
-                    {existingNames.has(drink.name.trim().toLowerCase()) && (
-                      <span className="search__onmenu">On menu</span>
+            results.map((drink) => {
+              const onMenu = menuNames.has(key(drink))
+              const nominated = nomineeNames.has(key(drink))
+              return (
+                <div className="search__hit" key={drink.id} role="option" aria-selected={false}>
+                  <button type="button" className="search__hit-open" onClick={() => onOpen(drink)}>
+                    {drink.thumb ? (
+                      <img src={`${drink.thumb}/preview`} alt="" loading="lazy" />
+                    ) : (
+                      <span className="search__hit-noimg" aria-hidden="true" />
                     )}
-                  </span>
-                  <span className="search__hit-meta">
-                    {[drink.category, drink.glass].filter(Boolean).join(' · ')}
-                  </span>
-                </span>
-              </button>
-            ))}
+                    <span className="search__hit-text">
+                      <span className="search__hit-name">{drink.name}</span>
+                      <span className="search__hit-meta">
+                        {[drink.category, drink.glass].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="quick"
+                    aria-pressed={nominated}
+                    disabled={nominated}
+                    aria-label={nominated ? `${drink.name} is nominated` : `Nominate ${drink.name}`}
+                    title={nominated ? 'Already nominated' : 'Nominate'}
+                    onClick={() => onQuickNominate(drink)}
+                  >
+                    ★
+                  </button>
+                  <button
+                    type="button"
+                    className="quick quick--add"
+                    aria-pressed={onMenu}
+                    disabled={onMenu}
+                    aria-label={onMenu ? `${drink.name} is on the menu` : `Add ${drink.name} to the menu`}
+                    title={onMenu ? 'On the menu' : 'Add to menu'}
+                    onClick={() => onQuickAdd(drink)}
+                  >
+                    {onMenu ? '✓' : '+'}
+                  </button>
+                </div>
+              )
+            })}
 
           {/* Always offered: the database will not have a bar's own drinks. */}
-          <button type="button" className="search__manual" onClick={addManual}>
-            Add “{trimmed}” myself
+          <button type="button" className="search__manual" onClick={createOwn}>
+            Make “{trimmed}” my own
           </button>
         </div>
       )}

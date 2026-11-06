@@ -3,6 +3,9 @@ import { loadFaces } from './loadFonts'
 import type { LoadedFace } from './loadFonts'
 import { snapshotPage, withNaturalScale } from './measure'
 import type { PageSnapshot } from './measure'
+import { fitPage } from '../fit'
+import { loadSheetFonts } from '../sheetFonts'
+import type { Orientation } from '../types'
 
 /** CSS pixels per millimetre at the 96dpi reference the browser lays out in. */
 const PX_PER_MM = 96 / 25.4
@@ -109,18 +112,78 @@ export interface PdfResult {
  * produces a file the caller can hand straight to the user, which is the only
  * thing that works on a phone.
  */
+/**
+ * Runs `fn` with the sheet laid out and its type fitted.
+ *
+ * On a phone the sheet lives on the Preview tab, so while the user is on Edit
+ * — which is where the Download button is — it sits inside a `display: none`
+ * pane. A hidden element measures as 0x0, and every line of text with it, so
+ * exporting from there used to produce a blank page; and because the type
+ * search skips a hidden sheet, a phone that never opened Preview had never had
+ * its type sized at all. So every hidden ancestor is shown, the fit is run,
+ * and everything is put back, all synchronously: no frame is painted in
+ * between, so nothing flickers.
+ */
+function withMeasurableSheet<T>(page: HTMLElement, fn: () => T): T {
+  const restore: Array<() => void> = []
+  // Both kinds of hiding are undone. A display:none ancestor gives the sheet
+  // no size at all; a visibility:hidden one (how the phone layout parks the
+  // preview off screen) keeps the size but makes every line of text count as
+  // invisible, which the snapshot rightly skips. Inline styles beat the
+  // non-important stylesheet rules that hide it.
+  for (let el = page.parentElement; el; el = el.parentElement) {
+    const target = el
+    const cs = getComputedStyle(target)
+    if (cs.display === 'none') {
+      const previous = target.style.display
+      target.style.display = 'block'
+      restore.push(() => {
+        target.style.display = previous
+      })
+    }
+    if (cs.visibility === 'hidden') {
+      const previous = target.style.visibility
+      target.style.visibility = 'visible'
+      restore.push(() => {
+        target.style.visibility = previous
+      })
+    }
+  }
+  try {
+    void page.offsetHeight
+    fitPage(page, Array.from(page.querySelectorAll<HTMLElement>('.cell')))
+    return fn()
+  } finally {
+    for (const undo of restore.reverse()) undo()
+  }
+}
+
 export async function generatePdf(
   page: HTMLElement,
   stage: HTMLElement | null,
   menuTitle: string,
+  orientation: Orientation,
 ): Promise<PdfResult> {
-  // Fetched before measuring so the (synchronous) snapshot and draw happen
-  // back to back with no await between them.
-  const faces = await loadFaces()
+  // Both awaited before measuring, so the (synchronous) snapshot and draw
+  // happen back to back with no await between them. The sheet's web fonts
+  // must be in before anything is measured, or the layout is computed in a
+  // fallback face and the exported text comes out the wrong size.
+  const [faces] = await Promise.all([loadFaces(), loadSheetFonts()])
 
-  const snap = withNaturalScale(stage, () => snapshotPage(page))
+  const snap = withMeasurableSheet(page, () =>
+    withNaturalScale(stage, () => snapshotPage(page)),
+  )
 
-  const landscape = snap.widthPx > snap.heightPx
+  // A sheet that still measures as nothing would export as a blank page.
+  // Failing loudly is better than handing over a file that looks fine
+  // until it is printed.
+  if (snap.widthPx < 10 || snap.heightPx < 10 || snap.lines.length === 0) {
+    throw new Error('The menu could not be measured for export. Try opening Preview first.')
+  }
+
+  // Taken from the menu's own setting rather than inferred from the measured
+  // size, which is how a hidden sheet once turned landscape menus portrait.
+  const landscape = orientation === 'landscape'
   const doc = new jsPDF({
     orientation: landscape ? 'landscape' : 'portrait',
     unit: 'mm',

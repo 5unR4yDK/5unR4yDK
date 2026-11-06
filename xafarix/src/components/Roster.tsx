@@ -1,4 +1,6 @@
 import type { Cocktail } from '../types'
+import { isCustom } from '../types'
+import CustomMark from './CustomMark'
 
 interface Props {
   cocktails: Cocktail[]
@@ -34,6 +36,7 @@ export default function Roster({ cocktails, selectedId, onSelect }: Props) {
           >
             <span className="chip__num">{i + 1}</span>
             {c.name.trim() === '' ? <em>Untitled</em> : c.name}
+            {isCustom(c) && <CustomMark />}
           </button>
         ))}
       </div>

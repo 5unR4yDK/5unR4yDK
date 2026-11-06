@@ -4,12 +4,16 @@ import type { Orientation } from '../types'
 import { PX_PER_MM, pageBox } from '../paper'
 
 /**
- * Scales the sheet down to fit the available pane.
+ * Scales the sheet down to fit the available pane, or shows it at actual size.
  *
  * The sheet itself is always rendered at true A4 size; only a CSS transform
  * shrinks it for the screen. That keeps one source of truth — what you see is
  * literally the printed page, viewed smaller — and because transforms do not
  * affect layout boxes, the fit measurements in fit.ts are unaffected.
+ *
+ * Fitting a landscape A4 onto an upright phone leaves the ingredient line
+ * about 4px tall: the composition reads, the words do not. "Actual size" shows
+ * the sheet at its printed scale and lets the pane scroll around it.
  */
 export default function Preview({
   orientation,
@@ -22,7 +26,9 @@ export default function Preview({
   children: ReactNode
 }) {
   const paneRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
+  const [fitScale, setFitScale] = useState(1)
+  const [actual, setActual] = useState(false)
+  const scale = actual ? 1 : fitScale
 
   const box = pageBox(orientation)
   const pageW = box.w * PX_PER_MM
@@ -37,7 +43,7 @@ export default function Preview({
     const availW = pane.clientWidth - padX
     const availH = pane.clientHeight - padY
     if (availW <= 0 || availH <= 0) return
-    setScale(Math.min(1, availW / pageW, availH / pageH))
+    setFitScale(Math.min(1, availW / pageW, availH / pageH))
   }, [pageW, pageH])
 
   useEffect(() => {
@@ -52,6 +58,11 @@ export default function Preview({
     return () => ro.disconnect()
   }, [measure])
 
+  // Each switch starts from the top-left corner, where the title is.
+  useEffect(() => {
+    paneRef.current?.scrollTo({ left: 0, top: 0 })
+  }, [actual])
+
   return (
     <div className="preview" ref={paneRef}>
       <div
@@ -65,6 +76,18 @@ export default function Preview({
       >
         {children}
       </div>
+
+      {/* Only worth offering when fitting actually shrinks the sheet. */}
+      {(fitScale < 0.98 || actual) && (
+        <button
+          type="button"
+          className="zoom-toggle"
+          aria-pressed={actual}
+          onClick={() => setActual((v) => !v)}
+        >
+          {actual ? 'Fit page' : 'Actual size'}
+        </button>
+      )}
     </div>
   )
 }
